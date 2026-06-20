@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Yummies</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0C0C0D;
+  --surface: #181819;
+  --surface-2: #222224;
+  --surface-3: #2A2A2C;
+  --accent: #C8200A;
+  --accent-dim: rgba(200,32,10,0.12);
+  --yellow: #F5C400;
+  --text-1: #FFFFFF;
+  --text-2: rgba(255,255,255,0.44);
+  --text-3: rgba(255,255,255,0.24);
+  --border: rgba(255,255,255,0.06);
+  --card-bg: #1E1E20;
+  --tab-h: 62px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --header-h: 110px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans',system-ui,sans-serif;color:var(--text-1)}
+#app{height:100vh;height:100dvh;max-width:430px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* HEADER */
+.hdr{background:var(--bg);flex-shrink:0;padding:0 18px;border-bottom:1px solid var(--border)}
+.hdr-top{height:54px;display:flex;align-items:center;justify-content:space-between}
+.wordmark{font-size:24px;font-weight:800;font-style:italic;color:var(--yellow);text-shadow:2px 2px 0 var(--accent);letter-spacing:.5px;line-height:1}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.status-pill{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:rgba(255,59,48,0.12);border:1px solid rgba(255,59,48,0.3);color:#FF3B30;letter-spacing:.1px}
+.status-pill.open{background:rgba(52,199,89,0.1);border-color:rgba(52,199,89,0.3);color:#34C759}
+.basket-btn{position:relative;width:36px;height:36px;background:var(--surface-2);border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.basket-btn svg{width:18px;height:18px;stroke:var(--text-1);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.badge{position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid var(--bg)}
+.badge.on{display:flex}
+.order-toggle{display:flex;background:var(--surface-2);border-radius:9px;padding:3px;margin:8px 0 10px;gap:0}
+.ot{flex:1;padding:7px 0;border:none;background:transparent;color:var(--text-2);font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .16s;letter-spacing:.1px}
+.ot.on{background:var(--accent);color:#fff}
+
+/* TAB BAR */
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:0 16px;height:44px;display:flex;align-items:center;gap:6px;border:none;background:transparent;color:var(--text-2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;position:relative;white-space:nowrap;transition:color .16s}
+.tab.on{color:var(--text-1)}
+.tab.on::after{content:'';position:absolute;bottom:0;left:16px;right:16px;height:2px;background:var(--accent);border-radius:1px}
+.tab-icon{font-size:15px}
+
+/* CONTENT */
+.scr{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scr::-webkit-scrollbar{display:none}
+.menu-body{padding:4px 0 calc(var(--tab-h) + 24px + var(--safe-b))}
+
+/* SECTION */
+.section{padding:0 16px}
+.sec-hdr{padding:18px 0 10px;display:flex;align-items:baseline;gap:8px}
+.sec-title{font-size:17px;font-weight:700;color:var(--text-1)}
+.sec-count{font-size:12px;color:var(--text-3);font-weight:500}
+.sec-divider{height:1px;background:var(--border);margin:0 16px}
+
+/* CARD */
+.cards{display:flex;flex-direction:column;gap:9px;padding-bottom:4px}
+.card{background:var(--card-bg);border-radius:14px;overflow:hidden;display:flex;height:90px;cursor:pointer;transition:transform .1s,background .1s;border:1px solid var(--border)}
+.card:active{transform:scale(.985);background:var(--surface-2)}
+.card-img{width:90px;height:90px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:34px;position:relative}
+.card-body{flex:1;padding:10px 12px 10px 12px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;min-width:0}
+.card-name{font-size:13.5px;font-weight:700;color:var(--text-1);line-height:1.25;letter-spacing:-.1px}
+.card-desc{font-size:11.5px;color:var(--text-2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-top:2px}
+.card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.card-price{font-size:13px;font-weight:700;color:var(--yellow)}
+.card-add{width:24px;height:24px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:17px;font-weight:300;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;flex-shrink:0;transition:transform .1s}
+.card-add:active{transform:scale(.88)}
+
+/* BOTTOM NAV */
+.nav{height:calc(var(--tab-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--surface);border-top:1px solid var(--border);display:flex;flex-shrink:0;z-index:10}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;color:var(--text-2);font-size:10px;font-weight:500;font-family:inherit;cursor:pointer;padding-top:5px;transition:color .16s;letter-spacing:.1px}
+.nav-btn.on{color:var(--accent)}
+.nav-btn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* GHOST */
+.ghost{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;padding:80px 32px;text-align:center}
+.ghost-i{font-size:40px;opacity:.2}
+.ghost-t{font-size:14px;color:var(--text-2);line-height:1.6}
+
+/* OVERLAY + SHEET */
+.ovr{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;opacity:0;pointer-events:none;transition:opacity .24s;backdrop-filter:blur(2px)}
+.ovr.on{opacity:1;pointer-events:all}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(102%);width:100%;max-width:430px;background:#fff;border-radius:20px 20px 0 0;z-index:51;transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:92vh;overflow-y:auto;overscroll-behavior:contain}
+.sheet.on{transform:translateX(-50%) translateY(0)}
+.handle{width:32px;height:4px;background:#DDD;border-radius:2px;margin:10px auto 0}
+
+/* ITEM SHEET */
+.item-hero{width:100%;height:200px;display:flex;align-items:center;justify-content:center;font-size:72px;margin-top:8px}
+.item-body{padding:16px 20px 0}
+.item-name{font-size:20px;font-weight:800;color:#111;letter-spacing:-.3px}
+.item-desc{font-size:13px;color:#888;line-height:1.6;margin-top:5px}
+.item-price{font-size:17px;font-weight:700;color:var(--accent);margin-top:10px}
+.opts-sec{margin-top:18px}
+.opts-label{font-size:12px;font-weight:700;color:#aaa;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.opt-tag{font-size:10px;font-weight:500;color:#bbb;background:#f2f2f2;padding:2px 7px;border-radius:6px;letter-spacing:0;text-transform:none}
+.opt-row{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid #F5F5F5;cursor:pointer}
+.opt-row:last-child{border-bottom:none}
+.opt-name{flex:1;font-size:14px;color:#222}
+.opt-xtra{font-size:12px;color:#aaa;margin-right:10px}
+.chk{width:21px;height:21px;border-radius:6px;border:2px solid #DDD;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
+.chk.on{background:var(--accent);border-color:var(--accent)}
+.chk.on::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+.radio{width:21px;height:21px;border-radius:50%;border:2px solid #DDD;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .12s}
+.radio.on{border-color:var(--accent)}
+.radio.on::after{content:'';width:9px;height:9px;background:var(--accent);border-radius:50%}
+.spc{height:100px}
+.sheet-foot{position:sticky;bottom:0;background:#fff;padding:12px 20px calc(14px + var(--safe-b));border-top:1px solid #F0F0F0;display:flex;gap:10px;align-items:center}
+.qty{display:flex;align-items:center;gap:8px;background:#F5F5F5;border-radius:10px;padding:7px 9px}
+.qty-b{width:26px;height:26px;border:none;background:#fff;border-radius:7px;font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.1);color:#222;font-weight:300;font-family:inherit}
+.qty-n{font-size:15px;font-weight:700;color:#222;min-width:16px;text-align:center}
+.atc{flex:1;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px 14px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+
+/* CART SHEET */
+.cart-sheet{background:#F4F4F6}
+.cart-hdr{background:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #EFEFEF}
+.cart-title{font-size:17px;font-weight:800;color:#111}
+.cart-x{width:28px;height:28px;background:#EFEFEF;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:#555;font-family:inherit}
+.c-list{padding:12px 14px 4px}
+.c-row{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.c-emoji{font-size:28px;width:44px;height:44px;background:#F5F5F5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.c-info{flex:1;overflow:hidden}
+.c-name{font-size:13px;font-weight:700;color:#111}
+.c-sub{font-size:11px;color:#aaa;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-price{font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0}
+.c-sum{background:#fff;margin:0 14px;border-radius:12px;padding:13px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.s-row{display:flex;justify-content:space-between;font-size:13px;color:#aaa;padding:3px 0}
+.s-total{font-size:15px;font-weight:800;color:#111;border-top:1px solid #F0F0F0;margin-top:8px;padding-top:10px}
+
+/* SAUCE UPSELL */
+.upsell{background:#fff;margin:10px 14px 0;border-radius:12px;padding:13px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.up-title{font-size:13px;font-weight:700;color:#111;margin-bottom:2px}
+.up-sub{font-size:12px;color:#aaa;margin-bottom:10px}
+.up-items{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.up-items::-webkit-scrollbar{display:none}
+.up-chip{flex-shrink:0;padding:7px 12px;border-radius:20px;border:1.5px solid #EBEBEB;background:#FAFAFA;font-size:12px;font-weight:600;color:#444;cursor:pointer;transition:all .14s;white-space:nowrap;font-family:inherit}
+.up-chip.on{border-color:var(--accent);background:rgba(200,32,10,.06);color:var(--accent)}
+
+.place-btn{display:block;width:calc(100% - 28px);margin:12px 14px calc(14px + var(--safe-b));background:var(--accent);color:#fff;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;text-align:center;letter-spacing:-.1px}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(var(--tab-h) + 12px + var(--safe-b));left:50%;transform:translateX(-50%);background:#1C1C1E;color:#fff;padding:8px 16px;border-radius:18px;font-size:12px;font-weight:600;z-index:200;opacity:0;transition:opacity .18s;white-space:nowrap;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="wordmark">YUMMIES</div>
+    <div class="hdr-right">
+      <div class="status-pill" id="statusPill">Closed · Opens 16:00</div>
+      <button class="basket-btn" onclick="openCart()">
+        <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <div class="badge" id="badge">0</div>
+      </button>
+    </div>
+  </div>
+  <div class="order-toggle">
+    <button class="ot on" id="otD" onclick="setOT('delivery')">🛵  Delivery</button>
+    <button class="ot" id="otC" onclick="setOT('collection')">🏃  Collection</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabBar"></div>
+
+<div class="scr" id="scr">
+  <div id="s-menu" class="menu-body"></div>
+  <div id="s-orders" style="display:none;height:100%"><div class="ghost"><div class="ghost-i">📋</div><div class="ghost-t">No orders yet.<br>Your history will appear here.</div></div></div>
+  <div id="s-account" style="display:none;height:100%"><div class="ghost"><div class="ghost-i">👤</div><div class="ghost-t">Profile · Settings · Log out</div></div></div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn on" id="nb-menu" onclick="goNav('menu')">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Menu
+  </button>
+  <button class="nav-btn" id="nb-basket" onclick="openCart()">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Basket
+  </button>
+  <button class="nav-btn" id="nb-orders" onclick="goNav('orders')">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Orders
+  </button>
+  <button class="nav-btn" id="nb-account" onclick="goNav('account')">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Account
+  </button>
+</div>
+
+</div>
+
+<div class="ovr" id="iOvr" onclick="closeItem()"></div>
+<div class="sheet" id="iSheet"><div class="handle"></div><div id="iContent"></div></div>
+
+<div class="ovr" id="cOvr" onclick="closeCart()"></div>
+<div class="sheet cart-sheet" id="cSheet">
+  <div class="handle"></div>
+  <div class="cart-hdr"><div class="cart-title">Your Basket</div><button class="cart-x" onclick="closeCart()">✕</button></div>
+  <div id="cContent"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────
+const TABS = [
+  { id:'deals',    label:'Deals',              icon:'🔥' },
+  { id:'pizza',    label:'Pizza',              icon:'🍕' },
+  { id:'kebabs',   label:'Kebabs & Wraps',     icon:'🥙' },
+  { id:'chicken',  label:'Chicken & Burgers',  icon:'🍗' },
+  { id:'sides',    label:'Sides & More',       icon:'🍟' },
+  { id:'drinks',   label:'Drinks & Desserts',  icon:'🥤' },
+];
+
+const MENU = {
+  deals: [
+    { sec:'Meal Deals', items:[
+      {id:1,  name:'Meal Deal 1',        desc:'¼ Pounder Burger With Cheese, Chips, Drink', price:'£9.20',  e:'🍔', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:2,  name:'Meal Deal 2',        desc:'½ Pounder Burger With Cheese, Chips, Drink', price:'£10.50', e:'🍔', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:3,  name:'Meal Deal 3',        desc:'5 Pcs Hot Wings, Chips, Drink',               price:'£7.00',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:4,  name:'Meal Deal 4',        desc:'2 Pcs Chicken, Chips, Drink',                 price:'£7.70',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:5,  name:'Meal Deal 5',        desc:'3 Pcs Chicken, Chips, Drink',                 price:'£9.00',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:6,  name:'Meal Deal 6',        desc:'Chicken Burger, Chips, Drink',                price:'£9.50',  e:'🍔', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:7,  name:'Meal Deal 7',        desc:'Double Chicken Burger, Chips, Drink',         price:'£10.70', e:'🍔', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:8,  name:'Meal Deal 8',        desc:'Mixed Burger Chicken & Beef, Chips, Drink',   price:'£10.60', e:'🍔', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:9,  name:'Meal Deal 9',        desc:'10 Pcs Chicken Nuggets, Chips, Drink',        price:'£9.70',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:10, name:'Meal Deal 10',       desc:'4 Pcs Chicken Strips, Chips, Drink',          price:'£9.50',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:11, name:'Meat Bun Meal',      desc:'',                                            price:'£11.00', e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:12, name:'Kebab Meal',         desc:'',                                            price:'£13.00–£15.00', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:13, name:'Chicken Doner Meal', desc:'',                                            price:'£12.90–£14.50', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:14, name:'Mixed Doner Meal',   desc:'',                                            price:'£13.00–£15.00', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:15, name:'Pizza Deal 1',       desc:'10" Pizza, 4 Toppings, Wedges or Onion Rings, Can', price:'£14.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+    ]},
+    { sec:'Mega Deals', items:[
+      {id:16, name:'Mega Pack 1', desc:'8 Pcs Fried Chicken, 3x Chips, Beans, Coleslaw, Bottle',                            price:'£26.50', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+      {id:17, name:'Mega Pack 2', desc:'2x Large Kebab, 2x ¼ Burgers, 2x Chips, 3 Pcs Chicken, Coleslaw, Bottle',           price:'£46.00', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+      {id:18, name:'Mega Pack 3', desc:'6 Pcs Chicken, 2x ¼ Burgers, 8 Hot Wings, 2x Chips, Beans, Coleslaw, Bottle',      price:'£37.00', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+      {id:19, name:'Mega Pack 4', desc:'2x Medium Kebabs, 2x Chips, 2 Pcs Chicken, Bottle',                                 price:'£29.50', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+      {id:20, name:'Mega Pack 5', desc:'Any 10" Pizza, 4 Toppings, Garlic Bread, Chips, Coleslaw, Bottle',                  price:'£21.90', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+      {id:21, name:'Mega Pack 6', desc:'Any 10" Pizza, 2x Chips, 2x ¼ Burgers, Bottle',                                    price:'£28.50', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+      {id:22, name:'Mega Pack 7', desc:'10" Pizza, Any Medium Doner, ¼ Burger, 2x Chips, Garlic Bread, Bottle',             price:'£48.00', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+      {id:23, name:'Mega Pack 8', desc:'2x 10" Pizzas, Garlic Bread with Cheese, 2x Chips, 1.5L Drink',                    price:'£30.00', e:'🎉', g:'linear-gradient(135deg,#922B21,#C0392B)'},
+    ]},
+    { sec:'Pizza Offers', items:[
+      {id:24, name:'Any 2x 10"', desc:'Any 2x 10" Pizzas', price:'£18.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:25, name:'Any 2x 12"', desc:'Any 2x 12" Pizzas', price:'£24.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+    ]},
+  ],
+  pizza: [
+    { sec:'Pizzas', items:[
+      {id:30, name:'Margherita',           desc:'Tomato Sauce, Cheese',                                              price:'£5.50–£10.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:31, name:'BBQ Pizza',            desc:'Cheese, BBQ Sauce',                                                 price:'£5.50–£10.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:32, name:'Garlic Pizza',         desc:'Cheese, Special Garlic Sauce',                                      price:'£5.50–£10.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:33, name:'Chicken & Mushroom',   desc:'Tomato Sauce, Cheese, Chicken, Mushrooms',                          price:'£6.70–£12.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:34, name:'Chicken & Bacon',      desc:'Tomato Sauce, Cheese, Chicken, Bacon',                              price:'£6.70–£12.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:35, name:'Hot One Hot',          desc:'Tomato Sauce, Spicy Beef, Spicy Chicken, Pepperoni, Jalapeños',     price:'£7.50–£14.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:36, name:'Chicken & Sweetcorn',  desc:'Tomato Sauce, Cheese, Chicken, Sweetcorn',                          price:'£6.70–£12.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:37, name:'Ham & Bacon',          desc:'Ham, Bacon, Cheese',                                                price:'£6.70–£12.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:38, name:'Hawaiian',             desc:'Ham, Pineapple, Cheese',                                            price:'£6.70–£12.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:39, name:'Farmhouse',            desc:'Ham, Mushroom, Cheese',                                             price:'£6.70–£12.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:40, name:'Pepperoni Supreme',    desc:'Pepperoni, Pepperoni, Pepperoni, Cheese',                           price:'£7.00–£13.70', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:41, name:'Classic Pizza',        desc:'Ham, Mushroom, Pineapple, Cheese',                                  price:'£7.00–£13.70', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:42, name:'BBQ Original Experience', desc:'BBQ Sauce, Spicy Chicken, Onions, Peppers',                     price:'£7.50–£14.50', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:43, name:'New York City Hot',    desc:'Ham, Bacon, Mushroom, Jalapeños, Tomato, Cheese',                   price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:44, name:'Meat Feast',           desc:'Ham, Pepperoni, Spicy Chicken, Spicy Beef, Bacon',                  price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:45, name:'The Best Of Seven',    desc:'Ham, Pepperoni, Bacon, Mushroom, Onions, Peppers',                  price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:46, name:'Mighty Meaty',         desc:'Pepperoni, Spicy Chicken, Spicy Beef, Sweetcorn, Onions, Peppers, Cheese', price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:47, name:'The Sizzler Hot',      desc:'Pepperoni, Spicy Chicken, Onions, Jalapeños, Peppers, Cheese',      price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:48, name:'Mixed Doner Pizza',    desc:'Chicken Doner, Lamb Doner, Mushroom, Onions, Jalapeños, Cheese',    price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:49, name:'Sweet Herbie',         desc:'Mushroom, Pineapple, Sweetcorn, Onions, Tomato, Peppers, Cheese',   price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:50, name:'House Special',        desc:'Ham, Pepperoni, Spicy Beef, Bacon, Mushroom, Onions, Cheese',       price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+      {id:51, name:'Veggie',               desc:'Mushroom, Sweetcorn, Onions, Tomato, Peppers, Cheese',              price:'£7.90–£15.00', e:'🍕', g:'linear-gradient(135deg,#C0392B,#922B21)'},
+    ]},
+  ],
+  kebabs: [
+    { sec:'Kebabs', items:[
+      {id:60, name:'Doner Kebab',           desc:'Served with Fresh Salad & Pitta',                                          price:'£9.50–£14.00', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:61, name:'Chicken Doner Kebab',   desc:'Served with Fresh Salad & Pitta',                                          price:'£9.40–£13.80', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:62, name:'Mix Doner Kebab',       desc:'Served with Fresh Salad & Pitta',                                          price:'£9.50–£14.00', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:63, name:'Chicken Shish Kebab',   desc:'Cubed breasted chicken, skewered, marinated & charcoal grilled. Fresh Salad & Pitta', price:'£10.50–£16.90', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:64, name:'Lamb Shish Kebab',      desc:'Cubed lamb, skewered, marinated & charcoal grilled. Fresh Salad & Pitta',  price:'£12.00–£19.00', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:65, name:'Lamb Kofte Kebab',      desc:'Minced meat, skewered, spiced, marinated & charcoal grilled. Fresh Salad & Pitta', price:'£11.30–£17.50', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:66, name:'Special Chicken Shish', desc:'Chicken shish, fried vegetables. Fresh Salad & Pitta',                     price:'£11.90–£17.80', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:67, name:'Mixed Shish Kebab',     desc:'Served with Fresh Salad & Pitta',                                          price:'£11.40–£17.90', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:68, name:'Mix Grill Kebabs',      desc:'Lamb shish, kofte shish, chicken shish. Fresh Salad & Pitta',              price:'£22.50',       e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:69, name:'Kings Special',         desc:'Lamb shish, chicken shish, kofte shish & lamb doner. Fresh Salad & Pitta', price:'£24.00',       e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:70, name:'Yummies Special Kebab', desc:'1 Skewer (Lamb shish, kofte, chicken shish), lamb & chicken doner, 2 pitta in a container with rice or fried veg. Salad & 4 small sauce pots.', price:'£34.50', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+    ]},
+    { sec:'Combinations', items:[
+      {id:71, name:'Lamb Shish & Doner',           desc:'', price:'£15.50', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:72, name:'Chicken Shish & Chicken Doner',desc:'', price:'£15.20', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:73, name:'Chicken Shish & Doner',        desc:'', price:'£15.30', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:74, name:'Lamb Shish & Chicken Doner',   desc:'', price:'£15.40', e:'🥙', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+    ]},
+    { sec:'Wraps', items:[
+      {id:75, name:'Doner Wrap',           desc:'', price:'£9.50',  e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:76, name:'Doner Wrap Meal',      desc:'', price:'£13.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:77, name:'Mix Doner Wrap',       desc:'', price:'£9.50',  e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:78, name:'Mix Doner Wrap Meal',  desc:'', price:'£13.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:79, name:'Chicken Shish Wrap',   desc:'', price:'£11.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:80, name:'Lamb Shish Wrap',      desc:'', price:'£11.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:81, name:'Lamb Shish Wrap Meal', desc:'', price:'£15.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:82, name:'Chicken Shish Wrap Meal', desc:'', price:'£15.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:83, name:'Chicken Strip Wrap',   desc:'', price:'£9.50',  e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:84, name:'Chicken Strip Wrap Meal', desc:'', price:'£13.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:85, name:'Vegi Wrap',            desc:'', price:'£6.00',  e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:86, name:'Vegi Wrap Meal',       desc:'', price:'£10.00', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:87, name:'Chicken Doner Wrap',   desc:'', price:'£9.50',  e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:88, name:'Chicken Doner Wrap Meal', desc:'', price:'£13.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:89, name:'Kofte Shish Wrap',     desc:'', price:'£11.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:90, name:'Kofte Shish Wrap Meal',desc:'', price:'£15.50', e:'🌯', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+    ]},
+  ],
+  chicken: [
+    { sec:'Fried Chicken', items:[
+      {id:100, name:'1 Pc Fried Chicken',   desc:'', price:'£2.50–£5.00',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:101, name:'2 Pc Fried Chicken',   desc:'', price:'£4.50–£6.70',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:102, name:'3 Pc Fried Chicken',   desc:'', price:'£6.30–£8.50',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:103, name:'4 Pc Fried Chicken',   desc:'', price:'£8.00–£10.00', e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:104, name:'6 Pc Fried Chicken',   desc:'', price:'£11.50',       e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:105, name:'8 Pc Fried Chicken',   desc:'', price:'£15.00',       e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:106, name:'10 Pc Fried Chicken',  desc:'', price:'£18.40',       e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:107, name:'5 Pc Hot Wings',       desc:'', price:'£3.50–£6.00',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:108, name:'8 Pc Hot Wings',       desc:'', price:'£5.50–£7.50',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:109, name:'10 Pc Hot Wings',      desc:'', price:'£6.90–£9.20',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:110, name:'4 Pc Chicken Strips',  desc:'', price:'£5.50–£8.50',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+      {id:111, name:'10 Pc Chicken Nuggets',desc:'', price:'£5.80–£8.60',  e:'🍗', g:'linear-gradient(135deg,#D35400,#E67E22)'},
+    ]},
+    { sec:'Burgers', items:[
+      {id:120, name:'¼ Cheese Burger',       desc:'',                         price:'£5.50–£8.50',   e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:121, name:'½ Cheese Burger',       desc:'',                         price:'£7.50–£10.00',  e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:122, name:'Chicken Burger',        desc:'',                         price:'£6.00–£9.00',   e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:123, name:'Double Chicken Burger', desc:'',                         price:'£8.00–£10.50',  e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:124, name:'Mixed Burger',          desc:'Chicken & Beef Burger',    price:'£7.70–£10.30',  e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:125, name:'Burger With Doner Meat',desc:'',                         price:'£7.50–£10.00',  e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:126, name:'Veggie Burger',         desc:'',                         price:'£5.50–£8.50',   e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:127, name:'Chicken Meat In Bun',   desc:'',                         price:'£8.20–£10.70',  e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:128, name:'Donner Meat In Bun',    desc:'',                         price:'£8.20–£10.70',  e:'🍔', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+    ]},
+  ],
+  sides: [
+    { sec:'Sides', items:[
+      {id:140, name:'Chips',                    desc:'',    price:'£3.30–£3.90',  e:'🍟', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:141, name:'Chips & Cheese',           desc:'',    price:'£5.70–£7.00',  e:'🍟', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:142, name:'Chips & Any Sauce',        desc:'',    price:'£4.00–£6.50',  e:'🍟', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:143, name:'Chips, Cheese, Any Sauce', desc:'',    price:'£6.60–£7.50',  e:'🍟', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:144, name:'Potato Wedges',            desc:'',    price:'£4.50',        e:'🍟', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:145, name:'Tub Of Coleslaw',          desc:'',    price:'£2.20',        e:'🥗', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:146, name:'Tub Of Curry',             desc:'',    price:'£2.20',        e:'🍛', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:147, name:'Tub Of Gravy',             desc:'',    price:'£2.20',        e:'🍜', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:148, name:'Tub Of Beans',             desc:'',    price:'£2.20',        e:'🫘', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:149, name:'Rice',                     desc:'',    price:'£3.30',        e:'🍚', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:150, name:'Portion Salad',            desc:'',    price:'£3.70',        e:'🥗', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:151, name:'Onion Rings',              desc:'',    price:'£3.60',        e:'🧅', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:152, name:'Garlic Baguette',          desc:'',    price:'£2.70',        e:'🥖', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:153, name:'Garlic Baguette With Cheese',desc:'',  price:'£3.80',        e:'🥖', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:154, name:'Jalapeno Cream',           desc:'',    price:'£4.80–£7.80',  e:'🌶️', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:155, name:'Mozzarella Sticks',        desc:'',    price:'£4.40–£7.80',  e:'🧀', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:156, name:'Garlic Mushrooms (12pc)',  desc:'',    price:'£5.40',        e:'🍄', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:157, name:'Chicken Popcorn',          desc:'',    price:'£6.90–£8.00',  e:'🍗', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:158, name:'Tortilla Wrap',            desc:'',    price:'£1.20',        e:'🫓', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+      {id:159, name:'Pitta',                    desc:'',    price:'£0.70',        e:'🫓', g:'linear-gradient(135deg,#B7950B,#D4AC0D)'},
+    ]},
+    { sec:'Extra Dishes', items:[
+      {id:160, name:'Doner Meat & Chips',    desc:'',                               price:'£10.50–£13.20', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:161, name:'Chicken Meat & Chips',  desc:'',                               price:'£10.30–£13.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:162, name:'Mix Meat & Chips',      desc:'',                               price:'£10.50–£13.20', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:163, name:'Doner On Rice',         desc:'Separate salad & pitta, 2 small dips', price:'£11.50–£14.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:164, name:'Chicken Doner On Rice', desc:'Separate salad & pitta, 2 small dips', price:'£11.30–£13.80', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:165, name:'Mix Doner On Rice',     desc:'Separate salad & pitta, 2 small dips', price:'£11.50–£14.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:166, name:'Chicken Shish On Chips',desc:'Separate salad & pitta, 2 small dips', price:'£12.50–£15.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:167, name:'Lamb Shish On Chips',   desc:'Separate salad & pitta, 2 small dips', price:'£13.50–£17.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:168, name:'Kofte Shish On Chips',  desc:'Separate salad & pitta, 2 small dips', price:'£12.70–£15.50', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:169, name:'Chip In Pitta',         desc:'',                               price:'£4.50',         e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:170, name:'Chip In Pitta With Salad',desc:'',                             price:'£5.50',         e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:171, name:'Platter 10',            desc:'Garlic pizza bread, doner, chicken doner, 2 hot wings, chips, 2 mozzarella sticks, 2 onion rings & 2 jalapeño creams', price:'£21.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:172, name:'Platter 12',            desc:'Garlic pizza bread, doner, chicken doner, 5 hot wings, chips, 3 mozzarella sticks, 3 onion rings & 3 jalapeño creams', price:'£24.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:173, name:'Chicken Shish On Rice', desc:'Separate salad & pitta, 2 small dips', price:'£12.50–£15.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:174, name:'Lamb Shish On Rice',    desc:'Separate salad & pitta, 2 small dips', price:'£13.50–£17.00', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:175, name:'Lamb Kofte On Rice',    desc:'Separate salad & pitta, 2 small dips', price:'£12.70–£15.50', e:'🍽️', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:176, name:'Salad In Pitta',        desc:'',                               price:'£4.50',         e:'🥗', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+    ]},
+    { sec:'Kids Corner', items:[
+      {id:180, name:'Kids Fish Fingers (4pc) Meal', desc:'Served with Chips and Drink', price:'£6.90', e:'🐟', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:181, name:'Kids Nuggets (5pc) Meal',      desc:'Served with Chips and Drink', price:'£6.90', e:'🍗', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:182, name:'Kids Sausage (2pc) Meal',      desc:'Served with Chips and Drink', price:'£6.90', e:'🌭', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:183, name:'Kids Strips (2pc) Meal',       desc:'Served with Chips and Drink', price:'£6.90', e:'🍗', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:184, name:'Kids Chicken (1pc) Meal',      desc:'Served with Chips and Drink', price:'£6.90', e:'🍗', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:185, name:'Kids Pizza Meal',              desc:'7" Cheese & Tomato Pizza. Served with Chips and Drink', price:'£8.50', e:'🍕', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:186, name:'Kids Kebab Meal',              desc:'Plain Only. Served with Chips and Drink', price:'£8.00', e:'🥙', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:187, name:'Kids Popcorn Meal',            desc:'Served with Chips and Drink', price:'£6.90', e:'🍿', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+      {id:188, name:'Kids Cheese Burger Meal',      desc:'Served with Chips and Drink', price:'£6.90', e:'🍔', g:'linear-gradient(135deg,#1A5276,#2471A3)'},
+    ]},
+    { sec:'Sauces & Dips', items:[
+      {id:190, name:'Chilli Sauce',    desc:'', price:'£0.90–£2.20', e:'🌶️', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:191, name:'Garlic Sauce',    desc:'', price:'£0.90–£2.20', e:'🧄', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:192, name:'Mint Sauce',      desc:'', price:'£0.90–£2.20', e:'🌿', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:193, name:'BBQ Sauce',       desc:'', price:'£0.90–£2.20', e:'🍖', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:194, name:'Ketchup',         desc:'', price:'£0.90–£2.20', e:'🍅', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:195, name:'Burger Sauce',    desc:'', price:'£0.90–£2.20', e:'🍔', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:196, name:'Mayonnaise',      desc:'', price:'£0.90–£2.20', e:'🥣', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:197, name:'Tub Of Coleslaw', desc:'', price:'£2.20',       e:'🥗', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:198, name:'Tub Of Curry',    desc:'', price:'£2.20',       e:'🍛', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:199, name:'Tub Of Gravy',    desc:'', price:'£2.20',       e:'🍜', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+      {id:200, name:'Tub Of Beans',    desc:'', price:'£2.20',       e:'🫘', g:'linear-gradient(135deg,#C0392B,#E74C3C)'},
+    ]},
+  ],
+  drinks: [
+    { sec:'Drinks', items:[
+      {id:210, name:'Pepsi',           desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#1F3A93,#2E4482)'},
+      {id:211, name:'7Up',             desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#1E8449,#27AE60)'},
+      {id:212, name:'Dr. Pepper',      desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#6E2C00,#A04000)'},
+      {id:213, name:'Apple Tango',     desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#1E8449,#27AE60)'},
+      {id:214, name:'Tango Orange',    desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#E67E22,#D35400)'},
+      {id:215, name:'Pepsi Max',       desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#1F3A93,#2E4482)'},
+      {id:216, name:'Diet Pepsi',      desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#1F3A93,#2E4482)'},
+      {id:217, name:'Rio Tropical',    desc:'Can', price:'£1.30', e:'🥤', g:'linear-gradient(135deg,#1E8449,#27AE60)'},
+      {id:218, name:'Pepsi 1.5L',      desc:'Bottle', price:'£3.00', e:'🍶', g:'linear-gradient(135deg,#1F3A93,#2E4482)'},
+      {id:219, name:'7Up 1.5L',        desc:'Bottle', price:'£3.00', e:'🍶', g:'linear-gradient(135deg,#1E8449,#27AE60)'},
+      {id:220, name:'Orange Tango 1.5L',desc:'Bottle', price:'£3.00', e:'🍶', g:'linear-gradient(135deg,#E67E22,#D35400)'},
+      {id:221, name:'Diet Pepsi 1.5L', desc:'Bottle', price:'£3.00', e:'🍶', g:'linear-gradient(135deg,#1F3A93,#2E4482)'},
+      {id:222, name:'Yazoo Milkshake', desc:'', price:'£1.50', e:'🥛', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+    ]},
+    { sec:'Desserts', items:[
+      {id:230, name:'Cheese Cake',    desc:'', price:'£3.00', e:'🍰', g:'linear-gradient(135deg,#7B3F00,#A04000)'},
+      {id:231, name:'Chocolate Cake', desc:'', price:'£3.00', e:'🍫', g:'linear-gradient(135deg,#4A235A,#7D3C98)'},
+    ]},
+  ],
+};
+
+const QUICK_SAUCES = ['Chilli Sauce','Garlic Sauce','Mint Sauce','BBQ Sauce','Ketchup','Tub Of Curry','Tub Of Gravy'];
+
+// ─── STATE ───────────────────────────────────────────────────────
+let activeTab = 'deals';
+let activeNav = 'menu';
+let cart = [];
+let selItem = null;
+let itemQty = 1;
+let addedSauces = [];
+
+// ─── BOOT ────────────────────────────────────────────────────────
+function boot() { renderTabBar(); renderMenu(); }
+
+// ─── TAB BAR ─────────────────────────────────────────────────────
+function renderTabBar() {
+  document.getElementById('tabBar').innerHTML = TABS.map(t =>
+    `<button class="tab ${t.id===activeTab?'on':''}" onclick="pickTab('${t.id}')">
+      <span class="tab-icon">${t.icon}</span>${t.label}
+    </button>`
+  ).join('');
+}
+
+function pickTab(id) {
+  activeTab = id;
+  renderTabBar();
+  document.getElementById('s-menu').innerHTML = '';
+  renderMenu();
+  document.getElementById('scr').scrollTop = 0;
+}
+
+// ─── MENU ────────────────────────────────────────────────────────
+function renderMenu() {
+  const sections = MENU[activeTab];
+  document.getElementById('s-menu').innerHTML = sections.map((sec, si) => `
+    ${si > 0 ? '<div class="sec-divider"></div>' : ''}
+    <div class="section">
+      <div class="sec-hdr">
+        <div class="sec-title">${sec.sec}</div>
+        <div class="sec-count">${sec.items.length} items</div>
+      </div>
+      <div class="cards">
+        ${sec.items.map(item => `
+          <div class="card" onclick="openItem(${item.id})">
+            <div class="card-img" style="background:${item.g}">${item.e}</div>
+            <div class="card-body">
+              <div>
+                <div class="card-name">${item.name}</div>
+                ${item.desc ? `<div class="card-desc">${item.desc}</div>` : ''}
+              </div>
+              <div class="card-foot">
+                <div class="card-price">${item.price}</div>
+                <button class="card-add" onclick="event.stopPropagation();quickAdd(${item.id})">+</button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── ITEM DETAIL ─────────────────────────────────────────────────
+function findItem(id) {
+  for (const tab of Object.values(MENU)) {
+    for (const sec of tab) {
+      const found = sec.items.find(i => i.id === id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function openItem(id) {
+  const item = findItem(id);
+  if (!item) return;
+  selItem = item; itemQty = 1;
+  document.getElementById('iContent').innerHTML = `
+    <div class="item-hero" style="background:${item.g}">${item.e}</div>
+    <div class="item-body">
+      <div class="item-name">${item.name}</div>
+      ${item.desc ? `<div class="item-desc">${item.desc}</div>` : ''}
+      <div class="item-price">${item.price}</div>
+    </div>
+    <div class="spc"></div>
+    <div class="sheet-foot">
+      <div class="qty">
+        <button class="qty-b" onclick="dQ(-1)">−</button>
+        <span class="qty-n" id="qn">1</span>
+        <button class="qty-b" onclick="dQ(1)">+</button>
+      </div>
+      <button class="atc" onclick="addToCart()">
+        <span>Add to Basket</span>
+        <span id="atcP">${item.price.split('–')[0]}</span>
+      </button>
+    </div>`;
+  show('iOvr'); show('iSheet');
+}
+
+function closeItem() { hide('iOvr'); hide('iSheet'); selItem = null; }
+
+function dQ(d) {
+  itemQty = Math.max(1, itemQty + d);
+  const qn = document.getElementById('qn'); if (qn) qn.textContent = itemQty;
+}
+
+function addToCart() {
+  if (!selItem) return;
+  cart.push({ item: selItem, qty: itemQty });
+  updBadge(); closeItem(); toast(`${selItem.name} added ✓`);
+}
+
+function quickAdd(id) {
+  const item = findItem(id); if (!item) return;
+  cart.push({ item, qty: 1 });
+  updBadge(); toast(`${item.name} added ✓`);
+}
+
+// ─── CART ────────────────────────────────────────────────────────
+function openCart() { renderCart(); show('cOvr'); show('cSheet'); }
+function closeCart() { hide('cOvr'); hide('cSheet'); }
+
+function renderCart() {
+  const el = document.getElementById('cContent');
+  if (!cart.length) {
+    el.innerHTML = `<div class="ghost" style="padding:60px 20px"><div class="ghost-i" style="opacity:.2">🛒</div><div class="ghost-t" style="color:#aaa">Your basket is empty.<br>Add something delicious.</div></div>`;
+    return;
+  }
+  const sub = cart.reduce((s,c) => {
+    const p = parseFloat((c.item.price.split('–')[0] || c.item.price).replace('£',''));
+    return s + (isNaN(p) ? 0 : p * c.qty);
+  }, 0);
+  const hasSauces = cart.some(c => {
+    const cat = ['deals','chicken','kebabs','sides'].includes(
+      Object.keys(MENU).find(k => MENU[k].some(s => s.items.some(i => i.id === c.item.id)))
+    );
+    return !['drinks','pizza'].includes(Object.keys(MENU).find(k => MENU[k].some(s => s.items.some(i => i.id === c.item.id))));
+  });
+
+  el.innerHTML = `
+    <div class="c-list">
+      ${cart.map((c,i) => `
+        <div class="c-row">
+          <div class="c-emoji">${c.item.e}</div>
+          <div class="c-info">
+            <div class="c-name">${c.qty}× ${c.item.name}</div>
+          </div>
+          <div class="c-price">${c.item.price.split('–')[0]}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="upsell">
+      <div class="up-title">Anything to dip?</div>
+      <div class="up-sub">Add a sauce to your order</div>
+      <div class="up-items">
+        ${QUICK_SAUCES.map(s => `<button class="up-chip ${addedSauces.includes(s)?'on':''}" onclick="togSauce('${s}')">${s}</button>`).join('')}
+      </div>
+    </div>
+
+    <div class="c-sum" style="margin-top:10px">
+      <div class="s-row"><span>Subtotal</span><span>£${sub.toFixed(2)}</span></div>
+      <div class="s-row"><span>Delivery</span><span>£2.00</span></div>
+      <div class="s-row s-total"><span>Total</span><span>£${(sub+2).toFixed(2)}</span></div>
+    </div>
+    <button class="place-btn" onclick="alert('Checkout — next screen.')">Place Order · £${(sub+2).toFixed(2)}</button>
+  `;
+}
+
+function togSauce(s) {
+  const i = addedSauces.indexOf(s);
+  if (i > -1) { addedSauces.splice(i,1); } else { addedSauces.push(s); }
+  renderCart();
+}
+
+function updBadge() {
+  const n = cart.reduce((s,c) => s+c.qty, 0);
+  const b = document.getElementById('badge');
+  b.textContent = n; b.className = 'badge' + (n ? ' on' : '');
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────
+function goNav(tab) {
+  activeNav = tab;
+  ['menu','orders','account'].forEach(t => {
+    const s = document.getElementById('s-'+t);
+    const b = document.getElementById('nb-'+t);
+    if (s) s.style.display = t===tab ? (t==='menu'?'block':'flex') : 'none';
+    if (b) b.className = 'nav-btn' + (t===tab ? ' on' : '');
+  });
+  const isMenu = tab === 'menu';
+  document.getElementById('tabBar').style.display = isMenu ? 'flex' : 'none';
+}
+
+// ─── ORDER TYPE ──────────────────────────────────────────────────
+function setOT(t) {
+  document.getElementById('otD').className = 'ot' + (t==='delivery'?' on':'');
+  document.getElementById('otC').className = 'ot' + (t==='collection'?' on':'');
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────
+function show(id) { document.getElementById(id).classList.add('on'); }
+function hide(id) { document.getElementById(id).classList.remove('on'); }
+let toastTm;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.opacity = '1';
+  clearTimeout(toastTm); toastTm = setTimeout(() => el.style.opacity = '0', 1800);
+}
+
+boot();
+</script>
+</body>
+</html>
