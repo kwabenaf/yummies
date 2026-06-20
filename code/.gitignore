@@ -1,0 +1,17 @@
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+android/.gradle/
+android/captures/
+android/local.properties
+android/key.properties
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/.last_build_id
+ios/Flutter/Generated.xcconfig
+ios/Runner/GeneratedPluginRegistrant.*
+*.lock
