@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'models/cart_model.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_shell.dart';
 
@@ -15,11 +17,14 @@ class YummiesApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Yummies',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
-      home: const HomeShell(),
+    return ChangeNotifierProvider(
+      create: (_) => CartModel(),
+      child: MaterialApp(
+        title: 'Yummies',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.dark,
+        home: const HomeShell(),
+      ),
     );
-  } //test
+  }
 }

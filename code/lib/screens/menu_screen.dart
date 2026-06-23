@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../data/menu_data.dart';
 import '../data/menu_item.dart';
+import '../models/cart_model.dart';
+import 'item_detail_sheet.dart';
 
 // ── Flat list entry types ──────────────────────────────────────
 abstract class _Entry {}
@@ -23,7 +26,9 @@ class _ItemEntry extends _Entry {
 
 // ── Screen ────────────────────────────────────────────────────
 class MenuScreen extends StatefulWidget {
-  const MenuScreen({super.key});
+  final VoidCallback onOpenBasket;
+  const MenuScreen({super.key, required this.onOpenBasket});
+
   @override
   State<MenuScreen> createState() => _MenuScreenState();
 }
@@ -77,9 +82,9 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: AppTheme.systemOverlay,
-      child: Scaffold(
-        backgroundColor: AppColors.bg,
-        body: SafeArea(
+      child: Container(
+        color: AppColors.bg,
+        child: SafeArea(
           bottom: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,6 +92,7 @@ class _MenuScreenState extends State<MenuScreen> {
               _Header(
                 isDelivery: _isDelivery,
                 onToggle: (v) => setState(() => _isDelivery = v),
+                onBasketTap: widget.onOpenBasket,
               ),
               _CategoryStrip(
                 activeIndex: _activeTab,
@@ -129,10 +135,16 @@ class _MenuScreenState extends State<MenuScreen> {
 class _Header extends StatelessWidget {
   final bool isDelivery;
   final ValueChanged<bool> onToggle;
-  const _Header({required this.isDelivery, required this.onToggle});
+  final VoidCallback onBasketTap;
+  const _Header({
+    required this.isDelivery,
+    required this.onToggle,
+    required this.onBasketTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final itemCount = context.watch<CartModel>().itemCount;
     return Container(
       color: AppColors.bg,
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
@@ -167,7 +179,7 @@ class _Header extends StatelessWidget {
                 const SizedBox(width: 8),
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () {},
+                  onTap: onBasketTap,
                   child: Container(
                     width: 36,
                     height: 36,
@@ -175,10 +187,47 @@ class _Header extends StatelessWidget {
                       color: AppColors.surface2,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 18,
-                      color: AppColors.text1,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Center(
+                          child: Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 18,
+                            color: AppColors.text1,
+                          ),
+                        ),
+                        if (itemCount > 0)
+                          Positioned(
+                            top: -3,
+                            right: -3,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              constraints: const BoxConstraints(minWidth: 15),
+                              height: 15,
+                              decoration: BoxDecoration(
+                                color: AppColors.accent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.bg,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$itemCount',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -263,53 +312,46 @@ class _CategoryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bg,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
-      ),
-      child: SizedBox(
-        height: 44,
-        child: ListView.builder(
-          controller: controller,
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          itemCount: MenuData.tabs.length,
-          itemBuilder: (context, index) {
-            final tab = MenuData.tabs[index];
-            final active = index == activeIndex;
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onSelect(index),
-              child: Container(
-                margin: const EdgeInsets.only(right: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: active ? AppColors.accent : Colors.transparent,
-                      width: 2,
-                    ),
+      height: 44,
+      color: AppColors.surface,
+      child: ListView.builder(
+        controller: controller,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: MenuData.tabs.length,
+        itemBuilder: (context, index) {
+          final tab = MenuData.tabs[index];
+          final active = index == activeIndex;
+          return GestureDetector(
+            onTap: () => onSelect(index),
+            child: Container(
+              margin: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: active ? AppColors.accent : Colors.transparent,
+                    width: 2,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(tab.icon, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(width: 5),
-                    Text(
-                      tab.label,
-                      style: AppTextStyles.catPill.copyWith(
-                        color: active ? AppColors.text1 : AppColors.text2,
-                        fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
               ),
-            );
-          },
-        ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(tab.icon, style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 5),
+                  Text(
+                    tab.label,
+                    style: AppTextStyles.catPill.copyWith(
+                      color: active ? AppColors.text1 : AppColors.text2,
+                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -389,13 +431,27 @@ class _MenuCardState extends State<_MenuCard>
   void _onTapDown(_) => _ctrl.forward();
   void _onTapUp(_) {
     _ctrl.reverse();
+    _openDetail();
   }
 
   void _onTapCancel() => _ctrl.reverse();
 
+  void _openDetail() {
+    showItemDetailSheet(context, item: widget.item, gradient: widget.gradient);
+  }
+
   void _quickAdd() {
     HapticFeedback.lightImpact();
-    // Cart logic — Session 2
+    if (widget.item.hasSizeChoice) {
+      // Decision (Session 2): no direct add when sizing is ambiguous —
+      // the sheet is the only path for multi-price items.
+      _openDetail();
+    } else {
+      context.read<CartModel>().add(
+        widget.item,
+        widget.item.priceOptions.first,
+      );
+    }
   }
 
   @override

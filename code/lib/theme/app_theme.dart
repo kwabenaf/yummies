@@ -16,6 +16,21 @@ class AppColors {
   static const Color text2 = Color(0x70FFFFFF); // 44%
   static const Color text3 = Color(0x3DFFFFFF); // 24%
   static const Color border = Color(0x0FFFFFFF); //  6%
+
+  // ── Sheet surfaces ──────────────────────────────────────────
+  // The item detail sheet and basket are deliberately light, matching
+  // the validated yummies-v2.html prototype — contrast against the
+  // dark app, not a continuation of it.
+  static const Color sheetBg = Color(0xFFFFFFFF);
+  static const Color sheetSurface = Color(0xFFF4F4F6);
+  static const Color sheetText = Color(0xFF111111);
+  static const Color sheetText2 = Color(0xFF888888);
+  static const Color sheetText3 = Color(0xFFAAAAAA);
+  static const Color sheetDivider = Color(0xFFF0F0F0);
+  static const Color chipBg = Color(0xFFFAFAFA);
+  static const Color chipBorder = Color(0xFFEBEBEB);
+  static const Color handle = Color(0xFFDDDDDD);
+  static const Color success = Color(0xFF34C759);
 }
 
 class AppTextStyles {
@@ -86,6 +101,92 @@ class AppTextStyles {
     fontSize: 10,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.1,
+  );
+
+  // ── Sheet text (item detail + basket) ────────────────────────
+  static TextStyle sheetName = GoogleFonts.dmSans(
+    fontSize: 20,
+    fontWeight: FontWeight.w800,
+    color: AppColors.sheetText,
+    letterSpacing: -0.3,
+  );
+
+  static TextStyle sheetDesc = GoogleFonts.dmSans(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AppColors.sheetText2,
+    height: 1.6,
+  );
+
+  static TextStyle sheetPrice = GoogleFonts.dmSans(
+    fontSize: 17,
+    fontWeight: FontWeight.w700,
+    color: AppColors.accent,
+  );
+
+  static TextStyle sizeLabel = GoogleFonts.dmSans(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.sheetText,
+  );
+
+  static TextStyle sizePrice = GoogleFonts.dmSans(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.sheetText3,
+  );
+
+  static TextStyle qtyNumber = GoogleFonts.dmSans(
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.sheetText,
+  );
+
+  static TextStyle atcLabel = GoogleFonts.dmSans(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: Colors.white,
+  );
+
+  static TextStyle sauceChip = GoogleFonts.dmSans(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
+
+  static TextStyle cartTitle = GoogleFonts.dmSans(
+    fontSize: 17,
+    fontWeight: FontWeight.w800,
+    color: AppColors.sheetText,
+  );
+
+  static TextStyle rowName = GoogleFonts.dmSans(
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: AppColors.sheetText,
+  );
+
+  static TextStyle rowSub = GoogleFonts.dmSans(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    color: AppColors.sheetText3,
+  );
+
+  static TextStyle rowPrice = GoogleFonts.dmSans(
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: AppColors.accent,
+  );
+
+  static TextStyle summaryRow = GoogleFonts.dmSans(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: AppColors.sheetText3,
+  );
+
+  static TextStyle summaryTotal = GoogleFonts.dmSans(
+    fontSize: 15,
+    fontWeight: FontWeight.w800,
+    color: AppColors.sheetText,
   );
 }
 
