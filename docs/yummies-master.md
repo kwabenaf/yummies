@@ -12,13 +12,25 @@
 | Design decisions (HTML prototype) | ✅ Complete |
 | Menu architecture | ✅ Complete |
 | Flutter foundation | ✅ Complete |
-| Item detail + basket | Pending |
+| Item detail + basket | ✅ Complete |
 | Checkout + delivery/collection | Pending |
 | Sauce upsell (checkout) | Pending |
 | Login / registration | Pending |
 | Order history + tracking | Pending |
 | Polish pass | Pending |
 | Shelf for pitch | Pending |
+
+---
+
+## FLAGGED — found, not yet fixed
+
+*Only what's deferred, never what's done. Rows get deleted when fixed, not marked "done."*
+
+| Found | Where | Issue | Status |
+|---|---|---|---|
+| Session 2 | `menu_data.dart`, 77 items | Every range-priced item in the codebase has only 2 price tiers — the middle tier is missing. The menu doc (`yummies-menu.md`) lists 3 tiers for all pizzas (Small/Medium/Large), most kebabs, sauces, and many chicken/sides items. Zero items in the code currently have 3 tiers. Full price-string audit against `yummies-menu.md` required before Session 3. | Open |
+| Session 2 | Size labels, all multi-price items | Size labels ("Regular/Large" for 2-tier, "Small/Medium/Large" for 3-tier) were assigned by count, not confirmed against the shop's actual terminology. Once the price audit restores 3-tier pricing, the labels will be correct for most items — but worth confirming against the shop's own naming if it differs. | Open |
+| Session 2 | `YUMMIES_AI_CONTEXT.md` | Contains a stale path reference (`C:\melloWare\apps\yummies_app`) to a project location that doesn't exist. Real project is `yummies_app_new` at `C:\melloWare\yummies\code`. | Fixed in Session 2 doc update |
 
 ---
 
@@ -128,6 +140,16 @@ A quiet "Anything to dip?" strip appears in the basket above the order total.
 Tub Of Curry, Tub Of Gravy). Skippable. Not a screen. Not a modal.
 Mirrors how a good counter person operates.
 
+### Size selection — detail sheet only
+Items with more than one price tier require size selection. The detail sheet is the
+only path — the quick-add button (+) on the card opens the sheet for these items
+instead of adding directly. Single-price items still quick-add normally.
+
+### Basket item removal — swipe to dismiss
+Minus button on qty-1 items dims and does nothing. Removing an item from the basket
+is a deliberate swipe-to-dismiss gesture, not a tap — prevents accidental removal
+when the user is trying to hit plus.
+
 ### Status indicator
 A small pill in the header shows open/closed status and next opening time.
 Non-blocking. Does not prevent menu browsing when closed.
@@ -158,7 +180,7 @@ Techniques employed in Flutter:
 ## BUILD PLAN
 
 ### Session 1 — Foundation ✅
-- Flutter project created: `yummies_app` at `C:\melloWare\apps\yummies_app`
+- Flutter project created: `yummies_app_new` at `C:\melloWare\yummies\code`
 - Flutter upgraded from 3.10.3 → 3.41.7 during setup
 - `lib/theme/app_theme.dart` — colour tokens, text styles, system chrome
 - `lib/data/menu_item.dart` — data models
@@ -168,18 +190,24 @@ Techniques employed in Flutter:
 - Bugs fixed: color+decoration conflict in CategoryStrip, card overflow with IntrinsicHeight
 - Running on device: Motorola Razr 50
 
-### Session 2 — Item detail + basket
-- Item detail bottom sheet (image, name, desc, price, qty, add to basket)
-- Basket sheet (cart rows, sauce upsell strip, order summary, place order button)
-- State management — Provider or simple setState, decide at session start
+### Session 2 — Item detail + basket ✅
+- `PriceOption` model and size-parsing logic in `menu_item.dart` (non-destructive to the 171 hand-authored items)
+- `CartModel` ChangeNotifier with add/setQty/removeLine; Provider wrapping app root in `main.dart`
+- Item detail bottom sheet (hero gradient, size radio selection, qty stepper, live-priced Add to Basket footer)
+- `BasketScreen` with cart rows, sauce upsell strip wired to real cart lines, order summary, and Session 3 stub Place Order button
+- Updated `MenuScreen` and `HomeShell` with basket badge, header icon tap, and tab navigation
+- Bugs fixed: const/non-const `TextStyle` compilation error; deprecated `.withOpacity`; multiple-Scaffold-under-`IndexedStack` causing persistent SnackBars (fixed by consolidating to one Scaffold in `HomeShell`); minus button removing items too aggressively (fixed with qty pill stepper and swipe-to-dismiss)
+- Running on device: Motorola Razr 50
 
-### Session 3 — Checkout + auth
+### Session 3 — Place Order flow
+- Full price-string audit of all 77 range-priced items in `menu_data.dart` against `yummies-menu.md` (FLAGGED — must be done before building checkout)
 - Delivery / collection selection
 - Checkout form (address, notes)
+- Place order confirmation
+
+### Session 4 — Auth + orders + account
 - Login + registration screens
 - Guest checkout option (reduces friction — collect account details after first order)
-
-### Session 4 — Orders + account
 - Order history list
 - Order detail / tracking status
 - Account screen (profile edit, password change, log out)
@@ -201,6 +229,7 @@ Techniques employed in Flutter:
 - Goes into the studio portfolio regardless of outcome
 - If accepted: charge for the work
 - If declined: skills compounded, portfolio strengthened
+- GitHub repo: https://github.com/kwabenaf/yummies (public)
 
 ---
 
@@ -210,3 +239,4 @@ Techniques employed in Flutter:
 |---|---|---|
 | 0.1 | Apr-2026 | Initial build. Discovery, audit, HTML prototype, design decisions all locked. |
 | 0.2 | Apr-2026 | Flutter session 1 complete. Foundation, theme, all menu data, menu screen running on device. Commercial section added with pricing range and rationale. |
+| 0.3 | 23-Jun-2026 | Flutter session 2 complete. Item detail sheet, basket, Provider, sauce upsell, swipe-to-dismiss. FLAGGED table added. Size selection and single-Scaffold pattern added to locked decisions. Session 3 updated to include price-string audit. Project path corrected. GitHub repo added. |

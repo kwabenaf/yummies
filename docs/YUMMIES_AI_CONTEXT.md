@@ -1,6 +1,7 @@
 # Yummies App — AI Context & Code Map
-*For use at the start of any new session working on this project.*
+*Claude's working document. Not user-facing — co-created, not read independently.*
 *Upload alongside yummies-master.md. Together they are sufficient to continue without reconstruction.*
+*Last updated: end of Session 2, 22 Jun 2026.*
 
 ---
 
@@ -11,258 +12,316 @@ chicken shop in Cardiff. Built speculatively under melloWare Ltd. The existing a
 WebView wrapper with broken navigation, no design system, and 15 tabs for 171 items.
 This replaces it with a native-feeling Flutter app.
 
-**Stack:** Flutter (Dart), google_fonts package, no state management library yet.
+**Stack:** Flutter (Dart), google_fonts, provider
 **Device tested on:** Motorola Razr 50
-**Project path:** `C:\melloWare\apps\yummies_app`
+**Project name:** `yummies_app_new`
+**Project path:** `C:\melloWare\yummies\code`
+**GitHub:** https://github.com/kwabenaf/yummies (public)
 **Flutter version:** 3.41.7
+**Archive:** `C:\melloWare\_archive\yummies-old\` — confirmed pre-bug-fix source-only backup, no Android platform folder, safe to ignore.
 
 ---
 
-## FILE STRUCTURE
+## FILE STRUCTURE (post Session 2)
 
 ```
 lib/
-├── main.dart                    — Entry point. App config, theme, orientation lock.
+├── main.dart                        — Entry point. Provider root, app config, orientation lock.
 ├── theme/
-│   └── app_theme.dart           — ALL design tokens. Colors, text styles, system chrome.
+│   └── app_theme.dart               — ALL design tokens. Dark app + light sheet surfaces.
 ├── data/
-│   ├── menu_item.dart           — Data models: MenuItem, MenuSection, MenuTab.
-│   └── menu_data.dart           — All 171 items as static Dart data. Single source of truth.
+│   ├── menu_item.dart               — MenuItem, PriceOption, MenuSection, MenuTab.
+│   └── menu_data.dart               — All 171 items as static Dart data. Untouched by Session 2.
+├── models/
+│   └── cart_model.dart              — CartModel ChangeNotifier. CartLine. Single basket state.
 └── screens/
-    ├── home_shell.dart          — Bottom nav (4 tabs). IndexedStack routing.
-    └── menu_screen.dart         — Main menu screen. Category strip + scrollable item cards.
+    ├── home_shell.dart              — THE ONLY SCAFFOLD. Bottom nav, IndexedStack, tab routing.
+    ├── menu_screen.dart             — Category strip, section headers, cards, quick-add logic.
+    ├── item_detail_sheet.dart       — Modal bottom sheet. Size selection, qty, add to basket.
+    └── basket_screen.dart           — Cart rows, sauce upsell, summary, place order stub.
 ```
+
+**Line counts (Session 2 end):**
+main.dart: 30 | app_theme.dart: 215 | menu_item.dart: 92 | menu_data.dart: ~930 |
+cart_model.dart: 56 | home_shell.dart: 189 | menu_screen.dart: 594 |
+item_detail_sheet.dart: 276 | basket_screen.dart: 384
+**Total:** ~2,766 lines across 9 files.
 
 ---
 
 ## FILE BY FILE
 
-### `lib/main.dart`
+### `lib/main.dart` (30 lines)
 - Locks orientation to portrait
 - Sets system UI overlay (transparent status bar, light icons)
+- **`ChangeNotifierProvider<CartModel>`** wraps the entire `MaterialApp`
 - Runs `YummiesApp` → `MaterialApp` → `HomeShell`
 - Uses `AppTheme.dark` for the theme
 
-### `lib/theme/app_theme.dart`
+### `lib/theme/app_theme.dart` (215 lines)
 The design system. Everything visual references this file. Never use raw hex or raw sizes
 anywhere else in the app.
 
 **AppColors** — static const Color values:
 - `bg` = `#0C0C0D` — near black, main background
 - `surface` = `#181819` — bottom nav, header backgrounds
-- `surface2` = `#222224` — toggle backgrounds, basket button
+- `surface2` = `#222224` — toggle backgrounds, basket button, qty pill
 - `surface3` = `#2A2A2C` — unused currently, available for deeper nesting
-- `cardBg` = `#1E1E20` — menu item cards
-- `accent` = `#C8200A` — red. Used sparingly: CTA buttons, active states, price text ONLY
-- `yellow` = `#F5C400` — wordmark colour only
+- `cardBg` = `#1E1E20` — menu item cards, basket cart rows
+- `accent` = `#C8200A` — red. CTA buttons, active states, price text, swipe-dismiss bg ONLY
+- `yellow` = `#F5C400` — wordmark and card price text only
 - `text1` = `#FFFFFF` — primary text
-- `text2` = `rgba(255,255,255,0.44)` — secondary text, inactive nav items
-- `text3` = `rgba(255,255,255,0.24)` — tertiary, item counts
-- `border` = `rgba(255,255,255,0.06)` — subtle borders throughout
+- `text2` = `Color(0x70FFFFFF)` (44%) — secondary text, inactive nav items
+- `text3` = `Color(0x3DFFFFFF)` (24%) — tertiary, item counts, dimmed minus button
+- `border` = `Color(0x0FFFFFFF)` (6%) — subtle borders throughout
+- `sheetBg` = `#FFFFFF` — item detail sheet background (light, not dark)
+- `sheetSurface` = `#F4F4F6` — basket sheet background (unused currently, available)
+- `sheetText` = `#111111` — sheet primary text
+- `sheetText2` = `#888888` — sheet secondary text
+- `sheetText3` = `#AAAAAA` — sheet tertiary text
+- `sheetDivider` = `#F0F0F0` — sheet separator lines
+- `chipBg` = `#FAFAFA` — qty stepper background in sheet
+- `chipBorder` = `#EBEBEB` — unused currently
+- `handle` = `#DDDDDD` — sheet drag handle, radio button inactive border
+- `success` = `#34C759` — unused currently, reserved
 
-**AppTextStyles** — static TextStyle values using DM Sans (google_fonts):
-- `wordmark` — italic bold 24px, yellow with red shadow offset
-- `sectionTitle` — 17px bold, text1
-- `sectionCount` — 12px, text3
-- `cardName` — 13.5px bold, text1
-- `cardDesc` — 11.5px regular, text2
-- `cardPrice` — 13px bold, yellow
-- `catPill` — 13px, used in category strip
-- `statusPill` — 11px bold, used for open/closed chip
-- `orderToggle` — 13px bold, delivery/collection toggle
-- `navLabel` — 10px, bottom nav labels
+**AppTextStyles** — static TextStyle values using DM Sans (google_fonts).
+All are non-const (GoogleFonts returns runtime values). Never wrap in `const` widgets.
+
+Dark app styles:
+`wordmark`, `sectionTitle`, `sectionCount`, `cardName`, `cardDesc`, `cardPrice`,
+`catPill`, `statusPill`, `orderToggle`, `navLabel`
+
+Light sheet styles (added Session 2):
+`sheetName`, `sheetDesc`, `sheetPrice`, `sizeLabel`, `sizePrice`, `qtyNumber`,
+`atcLabel`, `sauceChip`, `cartTitle`, `rowName`, `rowSub`, `rowPrice`,
+`summaryRow`, `summaryTotal`
 
 **AppTheme**:
 - `systemOverlay` — SystemUiOverlayStyle for transparent status bar
 - `dark` — ThemeData with no splash, dark colour scheme, DM Sans text theme
 
-### `lib/data/menu_item.dart`
-Three model classes:
+### `lib/data/menu_item.dart` (92 lines)
+Four model types:
 
-```dart
-class MenuItem {
-  final int id;
-  final String name;
-  final String description; // optional, defaults to ''
-  final String price;       // stored as String e.g. '£9.20' or '£9.50–£14.00'
-  final String emoji;
-}
+**`PriceOption`** — one priced version of an item (e.g. Small £5.50).
+- `label` (String) — empty for single-price items
+- `price` (double)
 
-class MenuSection {
-  final String title;       // original category name e.g. 'Meal Deals', 'Kebabs'
-  final List<MenuItem> items;
-  final List<Color> gradient; // 2-colour list for the card image panel
-}
+**`MenuItem`** — the core item.
+- `id`, `name`, `description`, `price` (display string), `emoji`
+- `get priceOptions` — parses the `price` string into a `List<PriceOption>`.
+  1 value → single option, empty label.
+  2 values → "Regular" / "Large".
+  3 values → "Small" / "Medium" / "Large".
+- `get hasSizeChoice` → `priceOptions.length > 1`. Used by `_quickAdd()` to decide
+  whether to open the detail sheet or add directly.
 
-class MenuTab {
-  final String id;          // e.g. 'deals', 'pizza', 'kebabs'
-  final String label;       // displayed in category strip
-  final String icon;        // emoji prefix
-  final List<MenuSection> sections;
-  int get totalItems        // computed from sections
-}
-```
+**`MenuSection`** — a group with title, items, and gradient colours.
+**`MenuTab`** — a top-level tab with id, label, icon, sections, and computed `totalItems`.
 
-Note: prices are strings because many items have range prices (small/medium/large).
-No price parsing is done in the app yet — prices are display-only at this stage.
+**CRITICAL DATA ISSUE:** The price-string parser works correctly, but the underlying
+data in `menu_data.dart` is wrong — 77 items have only 2 tiers where the menu doc
+says 3. The parser labels 2-tier items as "Regular/Large" when they should be
+"Small/Medium/Large" once the missing middle tier is restored. See FLAGGED in master doc.
 
-### `lib/data/menu_data.dart`
+### `lib/data/menu_data.dart` (~930 lines)
 Static class `MenuData` with one field: `static final List<MenuTab> tabs`.
+**Not touched by Session 2.** The 171 hand-authored items are unchanged.
 
-**6 tabs, 15 original categories collapsed into sections:**
+6 tabs, 15 original categories collapsed into sections.
+Gradient presets defined as private const lists at the top.
+Item IDs are unique integers in ranges: Deals 1–25, Pizza 30–51, Kebabs 60–90,
+Chicken 100–128, Sides 140–200, Drinks 210–231.
 
-| Tab id | Label | Sections inside | Item count |
-|---|---|---|---|
-| deals | Deals | Meal Deals, Mega Deals, Pizza Offers | 25 |
-| pizza | Pizza | Pizzas | 22 |
-| kebabs | Kebabs & Wraps | Kebabs, Combinations, Wraps | 31 |
-| chicken | Chicken & Burgers | Fried Chicken, Burgers | 21 |
-| sides | Sides & More | Sides, Extra Dishes, Kids Corner, Sauces & Dips | 53 |
-| drinks | Drinks & Desserts | Drinks, Desserts | 15 |
+Intentional duplicates: Tub Of Coleslaw, Curry, Gravy, Beans in both Sides and
+Sauces & Dips sections. Do not remove.
 
-**Gradient presets** are defined as private const lists at the top of the file:
-`_dealGrad`, `_megaGrad`, `_pizzaGrad`, `_kebabGrad`, `_comboGrad`, `_wrapGrad`,
-`_chickenGrad`, `_burgerGrad`, `_sidesGrad`, `_extraGrad`, `_kidsGrad`,
-`_saucesGrad`, `_drinksGrad`, `_dessertsGrad`
+### `lib/models/cart_model.dart` (56 lines)
+**`CartLine`** — one line in the basket.
+- `item` (MenuItem), `size` (PriceOption), `qty` (int, mutable)
+- `get lineTotal` → `size.price * qty`
+- `get key` → `'${item.id}::${size.label}'` — same item + different size = different line
 
-Each is a 2-colour warm gradient used as the left panel background on menu cards.
+**`CartModel`** extends `ChangeNotifier`.
+- `_lines` — the basket contents
+- `get lines`, `get itemCount`, `get subtotal`
+- `add(item, size, {qty})` — merges if same key exists, otherwise creates new line
+- `setQty(line, qty)` — updates qty, removes if qty <= 0
+- `removeLine(line)` — hard remove
+- `clear()` — empties everything
 
-**Important note on duplicates:** Tub Of Coleslaw, Tub Of Curry, Tub Of Gravy,
-Tub Of Beans appear in BOTH the Sides section and the Sauces & Dips section.
-This is intentional — discoverability. Do not remove the duplicates.
+No sauce-specific state. Sauce upsell chips add/remove real cart lines for sauce
+MenuItems found via lookup in `MenuData.tabs`. This means sauces show up in the
+cart row list, update subtotal, and survive any future cart persistence — they're
+not a cosmetic parallel structure.
 
-Item IDs are unique integers. ID ranges by tab:
-- Deals: 1–25
-- Pizza: 30–51
-- Kebabs/Wraps: 60–90
-- Chicken/Burgers: 100–128
-- Sides: 140–200
-- Drinks: 210–231
+### `lib/screens/home_shell.dart` (189 lines)
+**THE ONLY SCAFFOLD IN THE APP.** This is a locked architectural decision (Session 2).
+Do not add Scaffold to any tab screen — it causes SnackBar lifecycle bugs under
+IndexedStack because multiple ScaffoldMessengers compete for the same queue.
 
-### `lib/screens/home_shell.dart`
-Bottom navigation shell using `IndexedStack` (keeps all screens alive).
+- `HomeShell` — StatefulWidget, manages `_index` for tab switching
+- `_goToBasket()` callback passed to `MenuScreen` for header basket icon navigation
+- `IndexedStack` with 4 children: MenuScreen, BasketScreen, 2 placeholders
+- `_BottomNav` — custom nav bar with badge support on basket tab
+- `_NavItem` — badge renders when `badgeCount > 0`, watches `CartModel.itemCount`
+- `_PlaceholderScreen` — icon + label for Orders (Session 4) and Account (Session 4)
 
-4 tabs:
-- index 0 → `MenuScreen()`
-- index 1 → placeholder (Basket — Session 2)
-- index 2 → placeholder (Orders — Session 4)
-- index 3 → placeholder (Account — Session 4)
+### `lib/screens/menu_screen.dart` (594 lines)
+The main screen. Most complexity lives here.
 
-**`_BottomNav`** — custom nav bar, `AppColors.surface` background, 1px border top.
-**`_NavItem`** — each tab button. Active colour: `AppColors.accent`. Inactive: `AppColors.text2`.
-**`_PlaceholderScreen`** — centered icon + label for unbuilt screens.
-
-### `lib/screens/menu_screen.dart`
-The main screen. Most of the current complexity lives here.
-
-**Architecture:** Builds a flat `List<_Entry>` from the active tab's sections. Three
-entry types: `_SectionHeaderEntry`, `_DividerEntry`, `_ItemEntry`. This is rendered
-by a single `ListView.builder` — efficient, no nested scrolling issues.
+**Architecture:** Flat `List<_Entry>` from active tab's sections. Three entry types:
+`_SectionHeaderEntry`, `_DividerEntry`, `_ItemEntry`. Single `ListView.builder`.
 
 **Key widgets:**
+- `_MenuScreenState` — `_activeTab`, `_isDelivery`, `_entries`, two ScrollControllers
+- `_Header` — wordmark, status pill (hardcoded), basket button with live badge, delivery/collection toggle
+- `_ToggleBtn` — AnimatedContainer, 160ms
+- `_CategoryStrip` — horizontal tab pills, 44px height, 2px red underline on active
+- `_SectionHeader` — title + count
+- `_Divider` — 1px border line
+- `_MenuCard` — the card. ScaleTransition 0.97, IntrinsicHeight + minHeight: 90.
+  **Card tap** → always opens detail sheet.
+  **Quick-add (+)** → `hasSizeChoice` ? open detail sheet : add directly with haptic.
+- `_AddButton` — tighter scale 0.82, independent animation
 
-`_MenuScreenState` — manages `_activeTab` (int), `_isDelivery` (bool), `_entries` list.
-Has two ScrollControllers: `_listController` (main list), `_tabController` (category strip).
-`_switchTab()` rebuilds entries and resets list scroll to top with animation.
+**No Scaffold here.** Uses `Container(color: AppColors.bg)` + `SafeArea` instead.
 
-`_Header` — contains wordmark, status pill, basket button, delivery/collection toggle.
-Status pill is hardcoded as "Closed · Opens 16:00" — will be dynamic in a later session.
-Basket button currently has empty onTap — wired up in Session 2.
+### `lib/screens/item_detail_sheet.dart` (276 lines)
+Modal bottom sheet opened via `showItemDetailSheet()`.
 
-`_ToggleBtn` — `AnimatedContainer` for the delivery/collection switch.
-Animation duration: 160ms.
+- Hero gradient panel (180px) with emoji
+- Name, description, live price display
+- **Size selection** (only shown when `priceOptions.length > 1`): radio buttons,
+  "choose a size" label, tapping updates the displayed price and the Add to Basket total
+- Qty stepper (min 1, no max)
+- Sticky footer: qty pill + "Add to Basket · £X.XX" button
+- Haptic on add, pops the sheet on completion
 
-`_CategoryStrip` — horizontal `ListView.builder` of tab pills. Fixed height 44px.
-Active tab has 2px red underline via `Border(bottom:...)` on the container.
+**const TextStyle trap:** AppTextStyles values are non-const (GoogleFonts runtime).
+Do not wrap any widget containing an AppTextStyles reference in `const`. This was
+a compilation error caught and fixed in Session 2 — it will recur if const is
+applied carelessly to parent widgets.
 
-`_SectionHeader` — title + item count, `EdgeInsets.fromLTRB(16, 18, 16, 10)`.
+### `lib/screens/basket_screen.dart` (384 lines)
+Full basket tab, not a modal sheet.
 
-`_Divider` — 1px `AppColors.border` line between sections, 16px horizontal margin.
+- `BasketScreen` — reads `CartModel` via `context.watch`, shows empty state or list
+- `_CartRow` — **wrapped in `Dismissible`** (swipe left to remove, red bg with bin icon).
+  Qty pill with dimmed minus at qty 1 — minus does nothing when qty is already 1.
+- `_QtyPill` — `atMin` flag controls whether minus is dimmed/disabled
+- `_QtyIcon` — dimmed state via `AppColors.text3`
+- `_SauceStrip` — "Anything to dip?" with 7 chips. Each chip looks up the real
+  MenuItem from `MenuData.tabs`, adds/removes it as a real cart line (smallest size).
+  `isOn` checks whether a matching line exists in the cart.
+- `_Summary` — subtotal, delivery (hardcoded £2.00), total
+- `_PlaceOrderButton` — stub, shows SnackBar "Checkout — Session 3"
 
-`_MenuCard` — the item card. Key details:
-- `constraints: BoxConstraints(minHeight: 90)` — NOT a fixed height. Allows cards to
-  expand for long descriptions. This was a bug fix — do not change back to fixed height.
-- Wrapped in `IntrinsicHeight` with `CrossAxisAlignment.stretch` so the gradient panel
-  always fills the full card height regardless of content.
-- `ScaleTransition` on the whole card: 1.0 → 0.97 on press, 80ms forward / 180ms reverse.
-- Left panel: 90px wide, gradient background, emoji centred.
-- Right panel: name (1 line, ellipsis), description (2 lines, ellipsis, only if non-empty),
-  8px spacer, then price + add button row.
-- `_openDetail()` is stubbed — item detail sheet built in Session 2.
-- `_quickAdd()` calls `HapticFeedback.lightImpact()` — cart logic added Session 2.
+**No Scaffold here.** Uses `Container(color: AppColors.bg)` + `SafeArea` instead.
 
-`_AddButton` — separate stateful widget for the + button. Tighter animation: 1.0 → 0.82,
-60ms forward / 160ms reverse. Independent from card scale animation.
-
----
-
-## WHAT IS NOT BUILT YET
-
-Everything below this line is pending. Do not assume it exists.
-
-**State management** — no Provider, Riverpod, or Bloc yet. Currently simple `setState`.
-For Session 2 a decision is needed: Provider is the likely choice for cart state given
-it needs to be accessible from menu screen, basket sheet, and eventually checkout.
-
-**Item detail sheet** — bottom sheet triggered by tapping a card. Needs:
-image/emoji hero, name, description, price, quantity selector, add to basket CTA.
-
-**Basket** — cart state, basket sheet (triggered from nav or header button), sauce upsell
-strip ("Anything to dip?"), order summary, place order button.
-
-**Sauce upsell** — 7 quick-add chips at the top of the basket: Chilli Sauce, Garlic Sauce,
-Mint Sauce, BBQ Sauce, Ketchup, Tub Of Curry, Tub Of Gravy. Skippable, not a modal.
-
-**Checkout** — delivery/collection confirmation, address input, order notes, place order.
-
-**Auth** — login, registration (guest checkout first, account optional), password change.
-Registration should NOT require address upfront — collect at first checkout.
-
-**Orders screen** — order history list, order detail, tracking status.
-
-**Account screen** — profile edit, password change, log out.
-DELETE ACCOUNT must be at the bottom in a danger zone, NOT at the top.
-
-**Dynamic status** — open/closed pill should reflect actual opening hours:
-Tue–Thu + Sun 16:00–22:30, Fri–Sat 15:00–22:30, Mon Closed.
-
-**Polish pass** — transitions, empty states, error states, splash screen, app icon.
+**Delivery fee** is hardcoded £2.00, not wired to delivery/collection toggle. Session 3 fix.
 
 ---
 
-## DESIGN RULES — DO NOT VIOLATE
+## PATTERNS — LOCKED
 
-These are locked decisions. Do not suggest changing them.
+**Single Scaffold per shell.** Only `HomeShell` has a Scaffold. Tab screens use
+Container + SafeArea. This prevents SnackBar queue/lifecycle bugs under IndexedStack.
+Discovered the hard way in Session 2 — three Scaffolds competing for one messenger
+caused SnackBars to persist forever across tab switches.
 
-1. `AppColors.accent` (red) is used ONLY for: active states, CTA buttons, price text.
-   Not for decorative purposes. Not for section headers. Not for icons.
-2. Card height is `minHeight: 90` with `IntrinsicHeight`. Never revert to fixed height.
-3. The wordmark "YUMMIES" uses italic DM Sans with yellow fill and red shadow offset.
-   It is not a logo image — it is a Text widget styled via `AppTextStyles.wordmark`.
-4. No flattery. No reflexive agreement. If something is wrong or could be better, say so.
-5. Sauces & Dips intentionally duplicates 4 items from Sides. This is correct.
-6. The Combinations section (4 items) belongs in Kebabs & Wraps, not Deals.
+**Tap animations:** `AnimationController` + `ScaleTransition`. Cards: 0.97 scale.
+Add button: 0.82 scale. Pattern: onTapDown → forward, onTapUp → reverse then action,
+onTapCancel → reverse.
 
----
-
-## PATTERNS IN USE
-
-**Tap animations:** All interactive elements use `AnimationController` +
-`ScaleTransition`. Cards: 0.97 scale. Add button: 0.82 scale. Pattern:
-- `onTapDown` → `_ctrl.forward()`
-- `onTapUp` → `_ctrl.reverse()` then action
-- `onTapCancel` → `_ctrl.reverse()`
-
-**Flat list rendering:** Menu sections are flattened into a typed `List<_Entry>`
-before building. This avoids nested scrolling and keeps `ListView.builder` efficient
-across 171 items. Same pattern should be used if orders list or similar is built.
+**Flat list rendering:** Sections flattened into typed `List<_Entry>` before building.
+Single `ListView.builder`, no nested scrolling.
 
 **No raw values in widgets:** All colours via `AppColors`, all text styles via
-`AppTextStyles`. If a new style is needed, add it to `app_theme.dart` first.
+`AppTextStyles`. New values go in `app_theme.dart` first.
 
-**BouncingScrollPhysics:** Used on the main menu list for iOS-style feel on Android.
-`BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics())` — the parent wrapper
-ensures pull-to-refresh works if added later.
+**BouncingScrollPhysics:** Main menu list uses
+`BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics())`.
+
+**Detail sheet only for size selection.** Multi-price items cannot be quick-added.
+The + button routes to the detail sheet instead.
+
+**Swipe to dismiss for basket removal.** Minus stops at qty 1 (dims). Removal is a
+deliberate horizontal swipe gesture only.
+
+**Provider over setState for basket state.** CartModel is the single source of truth
+for basket contents, read by menu screen (badge), basket screen, and eventually checkout.
+
+---
+
+## DECISIONS MADE AND WHY
+
+| Decision | Why | Session |
+|---|---|---|
+| Provider, not setState | 3+ consumers (menu badge, basket, checkout) — callback threading gets ugly at this count | 2 |
+| Detail sheet only for sizing | Quick-add with ambiguous pricing silently picks the wrong price — the sheet is the only honest path | 2 |
+| Swipe-to-dismiss, not minus-to-remove | Minus sits next to plus — accidental removal is too easy. Swipe is a different motor action, can't happen by accident while adjusting qty | 2 |
+| Sauces as real cart lines, not parallel state | Keeps one source of truth. Sauces show in cart, affect totals, survive future persistence — no drift between a Set<String> and the actual basket | 2 |
+| Single Scaffold in HomeShell | Multiple Scaffolds under IndexedStack cause SnackBar lifecycle bugs — messenger doesn't cleanly hand off between competing Scaffolds on tab switch | 2 |
+| Light sheet surfaces | Item detail and basket sheets are deliberately light (#FFFFFF bg), contrasting against the dark app — validated against the yummies-v2.html prototype | 2 |
+
+---
+
+## THINGS TRIED AND REJECTED
+
+| What | Why rejected | Session |
+|---|---|---|
+| SnackBar with Undo on minus-to-remove | Timer never reliably auto-dismissed. Queue stacked stale removals. Close icon (×) added visual noise to a one-line toast. Three rounds of fixes, none clean. Root cause was wrong: the problem was accidental removal, not missing undo. Swipe-to-dismiss solved it without any SnackBar. | 2 |
+| Separate `_sauces` Set in CartModel | Created a parallel structure that could drift from the real cart lines. Removed before ship — sauce chips now add/remove actual MenuItems as cart lines. | 2 |
+| `const Padding` wrapping `Text` with AppTextStyles | GoogleFonts.dmSans() returns non-const TextStyle. Wrapping the parent widget in const causes compile error. Never const-wrap a widget tree that references AppTextStyles. | 2 |
+
+---
+
+## KNOWN GAPS AND OPEN WORK
+
+**Data integrity (FLAGGED, blocking Session 3):**
+77 of 171 items have only 2 price tiers in `menu_data.dart` where `yummies-menu.md`
+lists 3. Every pizza, most kebabs, all sized sauces, many chicken/sides items.
+The middle tier was systematically dropped during initial data entry in Session 1.
+Must be audited and corrected before Session 3 builds checkout — cart math will be
+wrong for every affected item otherwise.
+
+**Delivery fee not wired to toggle:**
+£2.00 hardcoded in `basket_screen.dart`. Collection should be £0. Wire to
+`_isDelivery` state when checkout is built.
+
+**Status pill hardcoded:**
+"Closed · Opens 16:00" — should reflect actual hours dynamically.
+
+**What's not built:**
+Checkout, auth, orders, account, dynamic status, polish pass.
+See master doc BUILD PLAN for session-by-session breakdown.
+
+---
+
+## WORKFLOW NOTES FOR FUTURE SESSIONS
+
+**GitHub pull, not paste.** Repo is public. Clone at session start:
+`git clone https://github.com/kwabenaf/yummies.git` — then read `code/lib/` directly.
+Eliminates the need for user to paste files and avoids stale-context risk.
+
+**git status after file handover.** When handing over multiple files, user should run
+`git status` immediately after copying them in, before running the app. Catches files
+that silently didn't overwrite (browser saving duplicates like `main (1).dart`).
+
+**melloCaravan standard mode.** When user signals low energy: pull code directly, lead with
+concrete actions not questions, front-load verification before reporting done.
+Speed reduces user effort, never reduces correctness. 
+
+**Shell context matters.** User switches between PowerShell and Git Bash (MINGW64).
+Commands that work in one may not work in the other (`rm -rf` is Bash, `Remove-Item
+-Recurse -Force` is PowerShell). Always check which shell the user is in before
+giving filesystem commands.
+
+**The prototype is for feel, not architecture.** `yummies-v2.html` validates design
+and interaction feel. Its JS logic (e.g. `price.split('–')[0]`) is a shortcut,
+not a decision. Don't read prototype code as architectural commitments.
 
 ---
 
@@ -271,22 +330,27 @@ ensures pull-to-refresh works if added later.
 | Session | What was built | Bugs fixed |
 |---|---|---|
 | 1 | Project setup, theme, all data models, menu screen, home shell | CategoryStrip color+decoration conflict; card fixed height overflow (replaced with IntrinsicHeight + minHeight) |
+| 2 | PriceOption model, CartModel + Provider, item detail sheet with size selection, BasketScreen with sauce upsell and swipe-to-dismiss, basket badge on nav + header | const/non-const TextStyle; deprecated .withOpacity; multiple-Scaffold-under-IndexedStack persistent SnackBars; minus button accidental removal (→ swipe-to-dismiss) |
 
 ---
 
 ## NEXT SESSION STARTS HERE
 
-Session 2: Item detail sheet + basket + cart state.
+Session 3: Place Order flow.
 
-Before writing code, confirm:
-- State management approach (Provider recommended — cart needs to be shared across screens)
-- Whether item detail sheet needs size selection for pizza/kebabs (prices are ranges)
-- Whether quick-add from card skips the detail sheet or opens it
+**Before writing any checkout code:** run the full price-string audit. 77 items
+in `menu_data.dart` need their middle price tier restored from `yummies-menu.md`.
+This is not optional — cart math will be wrong for every affected item until it's done.
+The parser and size labels will work correctly once the data is right (3-tier items
+automatically get "Small/Medium/Large" labels).
 
-The HTML prototype (yummies-v2.html in project outputs) shows the intended feel
-for the item detail sheet and basket if visual reference is needed.
+After the audit:
+- Wire delivery fee to delivery/collection toggle (£2.00 / £0.00)
+- Checkout form (address for delivery, notes)
+- Place order confirmation screen
+- Decide: does Session 3 also include auth, or does that stay in Session 4?
 
 ---
 
-*melloWare Ltd. April 2026.*
-*This file should be updated at the end of every session.*
+*melloWare Ltd. Session 2 closed 22 Jun 2026.*
+*This file is Claude's working document. Update at the end of every session.*
