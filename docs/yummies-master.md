@@ -13,8 +13,7 @@
 | Menu architecture | ✅ Complete |
 | Flutter foundation | ✅ Complete |
 | Item detail + basket | ✅ Complete |
-| Checkout + delivery/collection | Pending |
-| Sauce upsell (checkout) | Pending |
+| Checkout + delivery/collection | ✅ Complete |
 | Login / registration | Pending |
 | Order history + tracking | Pending |
 | Polish pass | Pending |
@@ -28,9 +27,10 @@
 
 | Found | Where | Issue | Status |
 |---|---|---|---|
-| Session 2 | `menu_data.dart`, 77 items | Every range-priced item in the codebase has only 2 price tiers — the middle tier is missing. The menu doc (`yummies-menu.md`) lists 3 tiers for all pizzas (Small/Medium/Large), most kebabs, sauces, and many chicken/sides items. Zero items in the code currently have 3 tiers. Full price-string audit against `yummies-menu.md` required before Session 3. | Open |
-| Session 2 | Size labels, all multi-price items | Size labels ("Regular/Large" for 2-tier, "Small/Medium/Large" for 3-tier) were assigned by count, not confirmed against the shop's actual terminology. Once the price audit restores 3-tier pricing, the labels will be correct for most items — but worth confirming against the shop's own naming if it differs. | Open |
-| Session 2 | `YUMMIES_AI_CONTEXT.md` | Contains a stale path reference (`C:\melloWare\apps\yummies_app`) to a project location that doesn't exist. Real project is `yummies_app_new` at `C:\melloWare\yummies\code`. | Fixed in Session 2 doc update |
+| Session 2 | Size labels, all multi-price items | Size labels ("Regular/Large" for 2-tier, "Small/Medium/Large" for 3-tier) were assigned by count, not confirmed against the shop's actual terminology. Worth confirming against the shop's own naming if it differs. | Open |
+| Session 3 | Checkout | Minimum delivery spend (£15 or collection) — business rule not enforced in the app. Needs investigation: what are the thresholds, do they vary by area? | Open |
+| Session 3 | Menu items | Item customisation beyond size selection — some items have sub-options (e.g. Chips & Any Sauce has proportions + sauce dropdown + salt/vinegar tick boxes in the live app). Per-item option modelling needed. | Open |
+| Session 3 | Basket | Cart persistence across app close — currently wiped on restart. Needs local storage (SharedPreferences or similar). | Open |
 
 ---
 
@@ -145,10 +145,26 @@ Items with more than one price tier require size selection. The detail sheet is 
 only path — the quick-add button (+) on the card opens the sheet for these items
 instead of adding directly. Single-price items still quick-add normally.
 
-### Basket item removal — swipe to dismiss
+### Basket item removal — swipe to dismiss + visible delete
 Minus button on qty-1 items dims and does nothing. Removing an item from the basket
 is a deliberate swipe-to-dismiss gesture, not a tap — prevents accidental removal
-when the user is trying to hit plus.
+when the user is trying to hit plus. A small dimmed × icon on the far right of each
+cart row provides a visible affordance for users who don't discover swiping.
+
+### Delivery/collection toggle — available on checkout
+The delivery/collection toggle is on both the menu header and the checkout screen.
+Users who reach checkout and want to switch don't need to navigate back. Switching
+on checkout dynamically shows/hides address fields and updates the order summary.
+
+### Running basket total in header
+A small yellow price total appears to the left of the basket icon when the cart has
+items. Disappears when the cart is empty. Shows subtotal (not including delivery fee).
+
+### Checkout — dark, not light
+The checkout and confirmation screens are dark (same AppColors.bg), matching the rest
+of the app. Only bottom sheet modals (item detail) use light surfaces. Checkout is a
+pushed route, not a modal — keeping it dark avoids a jarring transition from the
+dark basket tab.
 
 ### Status indicator
 A small pill in the header shows open/closed status and next opening time.
@@ -199,11 +215,16 @@ Techniques employed in Flutter:
 - Bugs fixed: const/non-const `TextStyle` compilation error; deprecated `.withOpacity`; multiple-Scaffold-under-`IndexedStack` causing persistent SnackBars (fixed by consolidating to one Scaffold in `HomeShell`); minus button removing items too aggressively (fixed with qty pill stepper and swipe-to-dismiss)
 - Running on device: Motorola Razr 50
 
-### Session 3 — Place Order flow
-- Full price-string audit of all 77 range-priced items in `menu_data.dart` against `yummies-menu.md` (FLAGGED — must be done before building checkout)
-- Delivery / collection selection
-- Checkout form (address, notes)
-- Place order confirmation
+### Session 3 — Place Order flow ✅
+- Price-string audit: 40 items in `menu_data.dart` had middle price tier missing (not 77 — the other 37 two-tier items are correctly two-tier). All pizzas, 8 kebabs, 3 sides, 7 sauces fixed. Verified to zero mismatches via Python audit script against `yummies-menu.md`.
+- Delivery/collection toggle refactored from local `_MenuScreenState` into `CartModel` (`isDelivery`, `deliveryFee`, `total`, `setDelivery()`). Basket summary dynamically shows "Delivery £2.00" or "Collection £0.00".
+- `checkout_screen.dart` — order type toggle (switchable on checkout), conditional address fields with validation (delivery: address, postcode, phone; collection: notes only), order summary with item lines and totals.
+- `confirmation_screen.dart` — success state with item count, order type, total. "Back to Menu" navigates to fresh HomeShell at index 0. Cart cleared before navigation.
+- Running basket total in header (yellow price text next to basket icon, visible when cart has items)
+- Visible delete icon (×) on basket cart rows, right of price — discoverable removal alongside swipe-to-dismiss
+- Bugs fixed: confirmation screen showing 0 items/wrong total (route builder closure captured cart by reference, values evaluated after clear — fixed by capturing as locals); "Back to Menu" returning to basket tab (popUntil landed on stale index — fixed with pushAndRemoveUntil)
+- 28-point test checklist + 4 retest items, all passing
+- Running on device: Motorola Razr 50
 
 ### Session 4 — Auth + orders + account
 - Login + registration screens
@@ -211,11 +232,16 @@ Techniques employed in Flutter:
 - Order history list
 - Order detail / tracking status
 - Account screen (profile edit, password change, log out)
+- Auto-fill checkout from account details
+- Saved notes on checkout (save/recall frequent order notes)
+- Cart persistence across app close (SharedPreferences or similar)
 
 ### Session 5 — Polish
 - Transitions reviewed
 - Empty states designed
 - Error states (closed shop, network error)
+- Optional tips on checkout (10% / 15% / 20%)
+- Add-to-cart animation (only if it can be done well)
 - App icon (melloWare to produce or placeholder)
 - Splash screen
 - Final device test
@@ -240,3 +266,4 @@ Techniques employed in Flutter:
 | 0.1 | Apr-2026 | Initial build. Discovery, audit, HTML prototype, design decisions all locked. |
 | 0.2 | Apr-2026 | Flutter session 1 complete. Foundation, theme, all menu data, menu screen running on device. Commercial section added with pricing range and rationale. |
 | 0.3 | 23-Jun-2026 | Flutter session 2 complete. Item detail sheet, basket, Provider, sauce upsell, swipe-to-dismiss. FLAGGED table added. Size selection and single-Scaffold pattern added to locked decisions. Session 3 updated to include price-string audit. Project path corrected. GitHub repo added. |
+| 0.4 | 24-Jun-2026 | Flutter session 3 complete. Price audit (40 items fixed), checkout + confirmation screens, delivery/collection in CartModel, running basket total, visible delete icon. FLAGGED updated: price audit resolved, minimum spend + item customisation + cart persistence added. Session 4 backlog expanded from testing feedback. Four new design decisions locked. |

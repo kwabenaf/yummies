@@ -35,7 +35,6 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   int _activeTab = 0;
-  bool _isDelivery = true;
   late List<_Entry> _entries;
   final _listController = ScrollController();
   final _tabController = ScrollController();
@@ -89,11 +88,7 @@ class _MenuScreenState extends State<MenuScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Header(
-                isDelivery: _isDelivery,
-                onToggle: (v) => setState(() => _isDelivery = v),
-                onBasketTap: widget.onOpenBasket,
-              ),
+              _Header(onBasketTap: widget.onOpenBasket),
               _CategoryStrip(
                 activeIndex: _activeTab,
                 controller: _tabController,
@@ -133,18 +128,14 @@ class _MenuScreenState extends State<MenuScreen> {
 
 // ── Header ────────────────────────────────────────────────────
 class _Header extends StatelessWidget {
-  final bool isDelivery;
-  final ValueChanged<bool> onToggle;
   final VoidCallback onBasketTap;
-  const _Header({
-    required this.isDelivery,
-    required this.onToggle,
-    required this.onBasketTap,
-  });
+  const _Header({required this.onBasketTap});
 
   @override
   Widget build(BuildContext context) {
-    final itemCount = context.watch<CartModel>().itemCount;
+    final cart = context.watch<CartModel>();
+    final itemCount = cart.itemCount;
+    final isDelivery = cart.isDelivery;
     return Container(
       color: AppColors.bg,
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
@@ -180,55 +171,72 @@ class _Header extends StatelessWidget {
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: onBasketTap,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface2,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Center(
-                          child: Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 18,
-                            color: AppColors.text1,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (itemCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Text(
+                            '£${cart.subtotal.toStringAsFixed(2)}',
+                            style: AppTextStyles.cardPrice.copyWith(
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                        if (itemCount > 0)
-                          Positioned(
-                            top: -3,
-                            right: -3,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface2,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 18,
+                                color: AppColors.text1,
                               ),
-                              constraints: const BoxConstraints(minWidth: 15),
-                              height: 15,
-                              decoration: BoxDecoration(
-                                color: AppColors.accent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: AppColors.bg,
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$itemCount',
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                            ),
+                            if (itemCount > 0)
+                              Positioned(
+                                top: -3,
+                                right: -3,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 15,
+                                  ),
+                                  height: 15,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accent,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.bg,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '$itemCount',
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                      ],
-                    ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -246,12 +254,12 @@ class _Header extends StatelessWidget {
                 _ToggleBtn(
                   label: '🛵  Delivery',
                   active: isDelivery,
-                  onTap: () => onToggle(true),
+                  onTap: () => context.read<CartModel>().setDelivery(true),
                 ),
                 _ToggleBtn(
                   label: '🏃  Collection',
                   active: !isDelivery,
-                  onTap: () => onToggle(false),
+                  onTap: () => context.read<CartModel>().setDelivery(false),
                 ),
               ],
             ),

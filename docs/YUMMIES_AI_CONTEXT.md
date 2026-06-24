@@ -1,7 +1,7 @@
 # Yummies App — AI Context & Code Map
 *Claude's working document. Not user-facing — co-created, not read independently.*
 *Upload alongside yummies-master.md. Together they are sufficient to continue without reconstruction.*
-*Last updated: end of Session 2, 22 Jun 2026.*
+*Last updated: end of Session 3, 24 Jun 2026.*
 
 ---
 
@@ -22,7 +22,7 @@ This replaces it with a native-feeling Flutter app.
 
 ---
 
-## FILE STRUCTURE (post Session 2)
+## FILE STRUCTURE (post Session 3)
 
 ```
 lib/
@@ -31,21 +31,24 @@ lib/
 │   └── app_theme.dart               — ALL design tokens. Dark app + light sheet surfaces.
 ├── data/
 │   ├── menu_item.dart               — MenuItem, PriceOption, MenuSection, MenuTab.
-│   └── menu_data.dart               — All 171 items as static Dart data. Untouched by Session 2.
+│   └── menu_data.dart               — All 171 items as static Dart data. 40 prices fixed Session 3.
 ├── models/
-│   └── cart_model.dart              — CartModel ChangeNotifier. CartLine. Single basket state.
+│   └── cart_model.dart              — CartModel ChangeNotifier. CartLine. Delivery state. Single basket state.
 └── screens/
-    ├── home_shell.dart              — THE ONLY SCAFFOLD. Bottom nav, IndexedStack, tab routing.
-    ├── menu_screen.dart             — Category strip, section headers, cards, quick-add logic.
+    ├── home_shell.dart              — THE ONLY SCAFFOLD (tabs). Bottom nav, IndexedStack, tab routing.
+    ├── menu_screen.dart             — Category strip, section headers, cards, quick-add, header with running total.
     ├── item_detail_sheet.dart       — Modal bottom sheet. Size selection, qty, add to basket.
-    └── basket_screen.dart           — Cart rows, sauce upsell, summary, place order stub.
+    ├── basket_screen.dart           — Cart rows, sauce upsell, summary, delete icon, navigation to checkout.
+    ├── checkout_screen.dart         — Pushed route. Order type toggle, address/notes form, order summary.
+    └── confirmation_screen.dart     — Pushed route. Order placed, summary, navigate to fresh HomeShell.
 ```
 
-**Line counts (Session 2 end):**
-main.dart: 30 | app_theme.dart: 215 | menu_item.dart: 92 | menu_data.dart: ~930 |
-cart_model.dart: 56 | home_shell.dart: 189 | menu_screen.dart: 594 |
-item_detail_sheet.dart: 276 | basket_screen.dart: 384
-**Total:** ~2,766 lines across 9 files.
+**Line counts (Session 3 end):**
+main.dart: 30 | app_theme.dart: 215 | menu_item.dart: 92 | menu_data.dart: 1030 |
+cart_model.dart: 69 | home_shell.dart: 204 | menu_screen.dart: 613 |
+item_detail_sheet.dart: 286 | basket_screen.dart: 421 |
+checkout_screen.dart: 466 | confirmation_screen.dart: 154
+**Total:** 3,580 lines across 11 files.
 
 ---
 
@@ -120,14 +123,11 @@ Four model types:
 **`MenuSection`** — a group with title, items, and gradient colours.
 **`MenuTab`** — a top-level tab with id, label, icon, sections, and computed `totalItems`.
 
-**CRITICAL DATA ISSUE:** The price-string parser works correctly, but the underlying
-data in `menu_data.dart` is wrong — 77 items have only 2 tiers where the menu doc
-says 3. The parser labels 2-tier items as "Regular/Large" when they should be
-"Small/Medium/Large" once the missing middle tier is restored. See FLAGGED in master doc.
-
-### `lib/data/menu_data.dart` (~930 lines)
+### `lib/data/menu_data.dart` (1030 lines)
 Static class `MenuData` with one field: `static final List<MenuTab> tabs`.
-**Not touched by Session 2.** The 171 hand-authored items are unchanged.
+**Session 3:** 40 items had middle price tier restored (all pizzas, 8 kebabs,
+3 sides, 7 sauces). Verified to zero mismatches against `yummies-menu.md`.
+Tier distribution: 94 single-price, 37 two-tier (correct), 40 three-tier.
 
 6 tabs, 15 original categories collapsed into sections.
 Gradient presets defined as private const lists at the top.
@@ -137,7 +137,7 @@ Chicken 100–128, Sides 140–200, Drinks 210–231.
 Intentional duplicates: Tub Of Coleslaw, Curry, Gravy, Beans in both Sides and
 Sauces & Dips sections. Do not remove.
 
-### `lib/models/cart_model.dart` (56 lines)
+### `lib/models/cart_model.dart` (69 lines)
 **`CartLine`** — one line in the basket.
 - `item` (MenuItem), `size` (PriceOption), `qty` (int, mutable)
 - `get lineTotal` → `size.price * qty`
@@ -145,7 +145,10 @@ Sauces & Dips sections. Do not remove.
 
 **`CartModel`** extends `ChangeNotifier`.
 - `_lines` — the basket contents
+- `_isDelivery` — delivery/collection state (Session 3)
 - `get lines`, `get itemCount`, `get subtotal`
+- `get isDelivery`, `get deliveryFee` (£2.00 / £0.00), `get total` (subtotal + fee)
+- `setDelivery(bool)` — updates toggle, notifies listeners
 - `add(item, size, {qty})` — merges if same key exists, otherwise creates new line
 - `setQty(line, qty)` — updates qty, removes if qty <= 0
 - `removeLine(line)` — hard remove
@@ -156,10 +159,12 @@ MenuItems found via lookup in `MenuData.tabs`. This means sauces show up in the
 cart row list, update subtotal, and survive any future cart persistence — they're
 not a cosmetic parallel structure.
 
-### `lib/screens/home_shell.dart` (189 lines)
-**THE ONLY SCAFFOLD IN THE APP.** This is a locked architectural decision (Session 2).
+### `lib/screens/home_shell.dart` (204 lines)
+**THE ONLY SCAFFOLD FOR TAB SCREENS.** This is a locked architectural decision (Session 2).
 Do not add Scaffold to any tab screen — it causes SnackBar lifecycle bugs under
 IndexedStack because multiple ScaffoldMessengers compete for the same queue.
+Pushed routes (checkout, confirmation) have their own Scaffolds — this is fine
+because they're separate routes on the Navigator, not children of IndexedStack.
 
 - `HomeShell` — StatefulWidget, manages `_index` for tab switching
 - `_goToBasket()` callback passed to `MenuScreen` for header basket icon navigation
@@ -168,15 +173,18 @@ IndexedStack because multiple ScaffoldMessengers compete for the same queue.
 - `_NavItem` — badge renders when `badgeCount > 0`, watches `CartModel.itemCount`
 - `_PlaceholderScreen` — icon + label for Orders (Session 4) and Account (Session 4)
 
-### `lib/screens/menu_screen.dart` (594 lines)
+### `lib/screens/menu_screen.dart` (613 lines)
 The main screen. Most complexity lives here.
 
 **Architecture:** Flat `List<_Entry>` from active tab's sections. Three entry types:
 `_SectionHeaderEntry`, `_DividerEntry`, `_ItemEntry`. Single `ListView.builder`.
 
 **Key widgets:**
-- `_MenuScreenState` — `_activeTab`, `_isDelivery`, `_entries`, two ScrollControllers
-- `_Header` — wordmark, status pill (hardcoded), basket button with live badge, delivery/collection toggle
+- `_MenuScreenState` — `_activeTab`, `_entries`, two ScrollControllers
+- `_Header` — wordmark, status pill (hardcoded), basket button with live badge and
+  running total (yellow price text, visible when cart has items), delivery/collection
+  toggle. Reads `isDelivery` and `itemCount` from `CartModel` directly (Session 3 —
+  no longer receives toggle state as parameter).
 - `_ToggleBtn` — AnimatedContainer, 160ms
 - `_CategoryStrip` — horizontal tab pills, 44px height, 2px red underline on active
 - `_SectionHeader` — title + count
@@ -188,7 +196,7 @@ The main screen. Most complexity lives here.
 
 **No Scaffold here.** Uses `Container(color: AppColors.bg)` + `SafeArea` instead.
 
-### `lib/screens/item_detail_sheet.dart` (276 lines)
+### `lib/screens/item_detail_sheet.dart` (286 lines)
 Modal bottom sheet opened via `showItemDetailSheet()`.
 
 - Hero gradient panel (180px) with emoji
@@ -204,32 +212,67 @@ Do not wrap any widget containing an AppTextStyles reference in `const`. This wa
 a compilation error caught and fixed in Session 2 — it will recur if const is
 applied carelessly to parent widgets.
 
-### `lib/screens/basket_screen.dart` (384 lines)
+### `lib/screens/basket_screen.dart` (421 lines)
 Full basket tab, not a modal sheet.
 
 - `BasketScreen` — reads `CartModel` via `context.watch`, shows empty state or list
 - `_CartRow` — **wrapped in `Dismissible`** (swipe left to remove, red bg with bin icon).
   Qty pill with dimmed minus at qty 1 — minus does nothing when qty is already 1.
+  **Visible × icon** (Session 3) — dimmed `close_rounded` icon right of price, taps
+  to remove line. Provides discoverable removal alongside swipe.
 - `_QtyPill` — `atMin` flag controls whether minus is dimmed/disabled
 - `_QtyIcon` — dimmed state via `AppColors.text3`
 - `_SauceStrip` — "Anything to dip?" with 7 chips. Each chip looks up the real
   MenuItem from `MenuData.tabs`, adds/removes it as a real cart line (smallest size).
   `isOn` checks whether a matching line exists in the cart.
-- `_Summary` — subtotal, delivery (hardcoded £2.00), total
-- `_PlaceOrderButton` — stub, shows SnackBar "Checkout — Session 3"
+- `_Summary` — receives `CartModel`, shows subtotal, delivery/collection fee from
+  model, total. Label dynamically reads "Delivery" or "Collection".
+- `_PlaceOrderButton` — navigates to `CheckoutScreen` via `Navigator.push`
 
 **No Scaffold here.** Uses `Container(color: AppColors.bg)` + `SafeArea` instead.
 
-**Delivery fee** is hardcoded £2.00, not wired to delivery/collection toggle. Session 3 fix.
+### `lib/screens/checkout_screen.dart` (466 lines)
+Pushed route from basket. Has its own Scaffold.
+
+- `CheckoutScreen` — StatefulWidget with text controllers for address, postcode,
+  phone, notes. Form key for delivery validation.
+- `_placeOrder()` — captures `isDelivery`, `total`, `itemCount` as locals BEFORE
+  `cart.clear()`, then `pushReplacement` to `ConfirmationScreen`. The builder
+  closure captures the locals, not the cart — prevents stale-data bug.
+- `_TopBar` — back arrow + "Checkout" title
+- `_OrderTypeBanner` — **tappable** delivery/collection toggle (not read-only).
+  Switching dynamically shows/hides address fields and updates order summary.
+  Uses `context.read<CartModel>().setDelivery()`.
+- `_TypeOption` — AnimatedContainer, 160ms, shows emoji + label + subtitle (price/Free)
+- `_SectionLabel` — uppercase section dividers
+- `_Field` — TextFormField with dark styling, accent focus border, validation
+- `_OrderSummary` — full item list + subtotal + fee + total
+- `_CheckoutButton` — "Place Order · £X.XX"
+
+**Validation:** Only address fields (line 1, postcode, phone) validate, and only
+when `cart.isDelivery` is true. Notes field never validates. Collection orders
+skip validation entirely.
+
+### `lib/screens/confirmation_screen.dart` (154 lines)
+Pushed route (replaces checkout). Has its own Scaffold.
+
+- `ConfirmationScreen` — StatelessWidget with `isDelivery`, `total`, `itemCount`
+  as final constructor parameters (values, not live cart references).
+- Green check icon, "Order placed" message, contextual subtitle
+- Summary card: items, type, total paid
+- "Back to Menu" button — uses `pushAndRemoveUntil` with a fresh `HomeShell()`,
+  removing all routes. This resets the tab index to 0 (menu) and avoids the
+  stale-basket-tab-index bug.
 
 ---
 
 ## PATTERNS — LOCKED
 
-**Single Scaffold per shell.** Only `HomeShell` has a Scaffold. Tab screens use
-Container + SafeArea. This prevents SnackBar queue/lifecycle bugs under IndexedStack.
-Discovered the hard way in Session 2 — three Scaffolds competing for one messenger
-caused SnackBars to persist forever across tab switches.
+**Single Scaffold for tab screens.** Only `HomeShell` has a Scaffold for tab screens.
+Tab screens use Container + SafeArea. Pushed routes (checkout, confirmation) get their
+own Scaffolds — they're separate Navigator routes, not IndexedStack children.
+Discovered the hard way in Session 2 — three Scaffolds under IndexedStack caused
+SnackBars to persist forever across tab switches.
 
 **Tap animations:** `AnimationController` + `ScaleTransition`. Cards: 0.97 scale.
 Add button: 0.82 scale. Pattern: onTapDown → forward, onTapUp → reverse then action,
@@ -247,11 +290,17 @@ Single `ListView.builder`, no nested scrolling.
 **Detail sheet only for size selection.** Multi-price items cannot be quick-added.
 The + button routes to the detail sheet instead.
 
-**Swipe to dismiss for basket removal.** Minus stops at qty 1 (dims). Removal is a
-deliberate horizontal swipe gesture only.
+**Swipe to dismiss + visible × for basket removal.** Minus stops at qty 1 (dims).
+Removal is swipe-to-dismiss or tapping the dimmed × icon on the right edge.
+Both call `cart.removeLine()`.
 
-**Provider over setState for basket state.** CartModel is the single source of truth
-for basket contents, read by menu screen (badge), basket screen, and eventually checkout.
+**Provider over setState for shared state.** CartModel is the single source of truth
+for basket contents AND delivery/collection toggle, read by menu screen (badge + total),
+basket screen, checkout, and confirmation.
+
+**Capture values before async navigation.** Route builder closures capture variables by
+reference. If the underlying object changes (e.g. `cart.clear()`) before the builder
+runs, the closure sees stale data. Capture computed values as locals first.
 
 ---
 
@@ -265,6 +314,12 @@ for basket contents, read by menu screen (badge), basket screen, and eventually 
 | Sauces as real cart lines, not parallel state | Keeps one source of truth. Sauces show in cart, affect totals, survive future persistence — no drift between a Set<String> and the actual basket | 2 |
 | Single Scaffold in HomeShell | Multiple Scaffolds under IndexedStack cause SnackBar lifecycle bugs — messenger doesn't cleanly hand off between competing Scaffolds on tab switch | 2 |
 | Light sheet surfaces | Item detail and basket sheets are deliberately light (#FFFFFF bg), contrasting against the dark app — validated against the yummies-v2.html prototype | 2 |
+| Delivery state in CartModel, not local | Toggle affects total (basket, checkout, confirmation all need it) — same argument as Provider over setState, applied to this specific field | 3 |
+| Dark checkout/confirmation screens | Pushed routes match the app's dark theme. Only modal bottom sheets use light surfaces. Avoids jarring transition from dark basket tab. | 3 |
+| Tappable toggle on checkout | Users who reach checkout and want to switch delivery/collection shouldn't need to navigate back. Address fields show/hide dynamically. | 3 |
+| Visible × icon on cart rows | Swipe-to-dismiss is undiscoverable for many users. Dimmed × on far right provides visible affordance without the accidental-removal risk of minus-to-zero (different position, different icon, different action). | 3 |
+| pushAndRemoveUntil for post-order nav | popUntil returns to HomeShell with stale tab index. Pushing a fresh HomeShell resets to menu tab cleanly. Provider survives because it wraps MaterialApp. | 3 |
+| Capture values before clear + navigate | Route builder closures evaluate lazily. cart.clear() runs before the builder. Capturing values as locals before navigation prevents the stale-data bug. | 3 |
 
 ---
 
@@ -275,27 +330,34 @@ for basket contents, read by menu screen (badge), basket screen, and eventually 
 | SnackBar with Undo on minus-to-remove | Timer never reliably auto-dismissed. Queue stacked stale removals. Close icon (×) added visual noise to a one-line toast. Three rounds of fixes, none clean. Root cause was wrong: the problem was accidental removal, not missing undo. Swipe-to-dismiss solved it without any SnackBar. | 2 |
 | Separate `_sauces` Set in CartModel | Created a parallel structure that could drift from the real cart lines. Removed before ship — sauce chips now add/remove actual MenuItems as cart lines. | 2 |
 | `const Padding` wrapping `Text` with AppTextStyles | GoogleFonts.dmSans() returns non-const TextStyle. Wrapping the parent widget in const causes compile error. Never const-wrap a widget tree that references AppTextStyles. | 2 |
+| Read-only order type banner on checkout | User feedback: if you reach checkout and want to switch delivery/collection, you'd have to go back multiple screens. Made it a tappable toggle instead. | 3 |
+| popUntil for post-order return to menu | Returns to HomeShell with stale _index (basket tab), not menu tab. No clean way to communicate the tab change back. Replaced with pushAndRemoveUntil to fresh HomeShell. | 3 |
+| Text-only swipe hint below cart rows | "Swipe to remove" text was too small and easily missed (mello feedback). Replaced with visible × icon on each row — always present, always discoverable. | 3 |
 
 ---
 
 ## KNOWN GAPS AND OPEN WORK
 
-**Data integrity (FLAGGED, blocking Session 3):**
-77 of 171 items have only 2 price tiers in `menu_data.dart` where `yummies-menu.md`
-lists 3. Every pizza, most kebabs, all sized sauces, many chicken/sides items.
-The middle tier was systematically dropped during initial data entry in Session 1.
-Must be audited and corrected before Session 3 builds checkout — cart math will be
-wrong for every affected item otherwise.
-
-**Delivery fee not wired to toggle:**
-£2.00 hardcoded in `basket_screen.dart`. Collection should be £0. Wire to
-`_isDelivery` state when checkout is built.
-
 **Status pill hardcoded:**
 "Closed · Opens 16:00" — should reflect actual hours dynamically.
 
+**Minimum delivery spend:**
+Live Yummies app enforces £15 minimum for delivery. Not implemented. Needs
+investigation: do thresholds vary by area? Should be a configurable value.
+
+**Item customisation beyond size:**
+Some items in the live app have sub-options (e.g. Chips & Any Sauce has proportions,
+sauce dropdown, salt/vinegar tick boxes). Current model only supports size tiers.
+Per-item option modelling needed — but scope is large. See FLAGGED in master doc.
+
+**Cart persistence:**
+Cart is wiped on app restart. Needs SharedPreferences or similar local storage.
+
+**Size labels for 2-tier items:**
+"Regular/Large" assigned by count, not confirmed against shop's actual terminology.
+
 **What's not built:**
-Checkout, auth, orders, account, dynamic status, polish pass.
+Auth, orders, account, dynamic status, cart persistence, polish pass.
 See master doc BUILD PLAN for session-by-session breakdown.
 
 ---
@@ -331,26 +393,29 @@ not a decision. Don't read prototype code as architectural commitments.
 |---|---|---|
 | 1 | Project setup, theme, all data models, menu screen, home shell | CategoryStrip color+decoration conflict; card fixed height overflow (replaced with IntrinsicHeight + minHeight) |
 | 2 | PriceOption model, CartModel + Provider, item detail sheet with size selection, BasketScreen with sauce upsell and swipe-to-dismiss, basket badge on nav + header | const/non-const TextStyle; deprecated .withOpacity; multiple-Scaffold-under-IndexedStack persistent SnackBars; minus button accidental removal (→ swipe-to-dismiss) |
+| 3 | Price audit (40 items fixed), delivery/collection in CartModel, checkout screen with toggle + address + validation, confirmation screen, running basket total in header, visible × delete on cart rows | Confirmation 0 items/wrong total (closure captured cart by ref, evaluated after clear); "Back to Menu" returning to basket tab (popUntil → pushAndRemoveUntil) |
 
 ---
 
 ## NEXT SESSION STARTS HERE
 
-Session 3: Place Order flow.
+Session 4: Auth + orders + account.
 
-**Before writing any checkout code:** run the full price-string audit. 77 items
-in `menu_data.dart` need their middle price tier restored from `yummies-menu.md`.
-This is not optional — cart math will be wrong for every affected item until it's done.
-The parser and size labels will work correctly once the data is right (3-tier items
-automatically get "Small/Medium/Large" labels).
+- Login + registration screens
+- Guest checkout option (reduces friction — collect account details after first order)
+- Order history list
+- Order detail / tracking status
+- Account screen (profile edit, password change, log out)
+- Auto-fill checkout from account details
+- Saved notes on checkout
+- Cart persistence across app close (SharedPreferences or similar)
 
-After the audit:
-- Wire delivery fee to delivery/collection toggle (£2.00 / £0.00)
-- Checkout form (address for delivery, notes)
-- Place order confirmation screen
-- Decide: does Session 3 also include auth, or does that stay in Session 4?
+Auth is the biggest open question: is this token-based against the existing backend,
+or a local-only prototype? Depends on the backend investigation (is the shop's system
+white-label with an API, or closed?). For a demo-quality v1 that gets pitched, local
+mock auth may be sufficient — the pitch is the front-end, not the integration.
 
 ---
 
-*melloWare Ltd. Session 2 closed 22 Jun 2026.*
+*melloWare Ltd. Session 3 closed 24 Jun 2026.*
 *This file is Claude's working document. Update at the end of every session.*

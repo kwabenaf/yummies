@@ -4,6 +4,7 @@ import '../data/menu_data.dart';
 import '../data/menu_item.dart';
 import '../models/cart_model.dart';
 import '../theme/app_theme.dart';
+import 'checkout_screen.dart';
 
 const _quickSauceNames = [
   'Chilli Sauce',
@@ -14,8 +15,6 @@ const _quickSauceNames = [
   'Tub Of Curry',
   'Tub Of Gravy',
 ];
-
-const double _deliveryFee = 2.00;
 
 MenuItem? _findMenuItem(String name) {
   for (final tab in MenuData.tabs) {
@@ -59,12 +58,11 @@ class BasketScreen extends StatelessWidget {
                         const SizedBox(height: 8),
                         _SauceStrip(cart: cart),
                         const SizedBox(height: 16),
-                        _Summary(subtotal: cart.subtotal),
+                        _Summary(cart: cart),
                       ],
                     ),
             ),
-            if (lines.isNotEmpty)
-              _PlaceOrderButton(total: cart.subtotal + _deliveryFee),
+            if (lines.isNotEmpty) _PlaceOrderButton(cart: cart),
           ],
         ),
       ),
@@ -173,6 +171,19 @@ class _CartRow extends StatelessWidget {
             Text(
               '£${line.lineTotal.toStringAsFixed(2)}',
               style: AppTextStyles.cardPrice,
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => cart.removeLine(line),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: AppColors.text3,
+                ),
+              ),
             ),
           ],
         ),
@@ -317,12 +328,12 @@ class _SauceStrip extends StatelessWidget {
 }
 
 class _Summary extends StatelessWidget {
-  final double subtotal;
-  const _Summary({required this.subtotal});
+  final CartModel cart;
+  const _Summary({required this.cart});
 
   @override
   Widget build(BuildContext context) {
-    final total = subtotal + _deliveryFee;
+    final feeLabel = cart.isDelivery ? 'Delivery' : 'Collection';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -332,9 +343,9 @@ class _Summary extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _SummaryLine('Subtotal', subtotal),
+          _SummaryLine('Subtotal', cart.subtotal),
           const SizedBox(height: 6),
-          _SummaryLine('Delivery', _deliveryFee),
+          _SummaryLine(feeLabel, cart.deliveryFee),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: AppColors.border),
@@ -347,7 +358,7 @@ class _Summary extends StatelessWidget {
                 style: AppTextStyles.sectionTitle.copyWith(fontSize: 15),
               ),
               Text(
-                '£${total.toStringAsFixed(2)}',
+                '£${cart.total.toStringAsFixed(2)}',
                 style: AppTextStyles.cardPrice.copyWith(fontSize: 15),
               ),
             ],
@@ -376,8 +387,8 @@ class _SummaryLine extends StatelessWidget {
 }
 
 class _PlaceOrderButton extends StatelessWidget {
-  final double total;
-  const _PlaceOrderButton({required this.total});
+  final CartModel cart;
+  const _PlaceOrderButton({required this.cart});
 
   @override
   Widget build(BuildContext context) {
@@ -385,9 +396,9 @@ class _PlaceOrderButton extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: GestureDetector(
         onTap: () {
-          ScaffoldMessenger.of(
+          Navigator.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Checkout — Session 3')));
+          ).push(MaterialPageRoute(builder: (_) => const CheckoutScreen()));
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 15),
@@ -397,7 +408,7 @@ class _PlaceOrderButton extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              'Place Order · £${total.toStringAsFixed(2)}',
+              'Place Order · £${cart.total.toStringAsFixed(2)}',
               style: AppTextStyles.atcLabel.copyWith(fontSize: 15),
             ),
           ),

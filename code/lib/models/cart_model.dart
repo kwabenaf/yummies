@@ -16,12 +16,25 @@ class CartLine {
 
 class CartModel extends ChangeNotifier {
   final List<CartLine> _lines = [];
+  bool _isDelivery = true;
 
   List<CartLine> get lines => List.unmodifiable(_lines);
 
   int get itemCount => _lines.fold(0, (sum, l) => sum + l.qty);
 
   double get subtotal => _lines.fold(0.0, (sum, l) => sum + l.lineTotal);
+
+  bool get isDelivery => _isDelivery;
+
+  double get deliveryFee => _isDelivery ? 2.00 : 0.00;
+
+  double get total => subtotal + deliveryFee;
+
+  void setDelivery(bool value) {
+    if (_isDelivery == value) return;
+    _isDelivery = value;
+    notifyListeners();
+  }
 
   void add(MenuItem item, PriceOption size, {int qty = 1}) {
     final key = '${item.id}::${size.label}';
